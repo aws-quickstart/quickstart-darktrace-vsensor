@@ -1,0 +1,444 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates a VPC infrastructure for a multi-AZ vSensor deployment on AWS. It deploys a VPC, bastion and scalable Darktrace vSensor cluster
+  behind an ELB. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.
+Metadata:
+  QuickStartDocumentation:
+    EntrypointName: "Launch into a new VPC"
+  OptionalParameters:
+    - VSensorInstanceSecurityGroups
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Network Configuration
+      Parameters:
+        - AvailabilityZones
+        - VPCCIDR
+        - PrivateSubnet1CIDR
+        - PrivateSubnet2CIDR
+        - PublicSubnet1CIDR
+        - PublicSubnet2CIDR
+        - RemoteAccessCIDR
+    - Label:
+        default: Bastion Configuration
+      Parameters:
+        - BastionInstanceType
+        - BastionKeyPairName
+        - BastionAMIOS
+    - Label:
+        default: Master Appliance Configuration
+      Parameters:
+        - VSensorMasterHostname
+        - VSensorMasterPort
+        - VSensorMasterPushtoken
+    - Label:
+        default: vSensor Configuration
+      Parameters:
+        - VSensorInstanceType
+        - VSensorKeyPairName
+        - VSensorUpdatekey
+        - VSensorDesiredCapacityASG
+        - VSensorMinSizeASG
+        - VSensorMaxSizeASG
+    - Label:
+        default: Traffic Mirroring Configuration
+      Parameters:
+        - VSensorTrafficMirrorRuleNumber
+        - VSensorTrafficMirrorSourceCIDR
+        - VSensorTrafficMirrorDestCIDR
+    - Label:
+        default: Logs & PCAPS Configuration
+      Parameters:
+        - VSensorLogGroupName
+        - VSensorLogGroupRetention
+        - VSensorLifecycleS3BucketDays
+    - Label:
+        default: AWS Quick Start configuration
+      Parameters:
+        - QSS3BucketName
+        - QSS3BucketRegion
+        - QSS3KeyPrefix
+    ParameterLabels:
+      # Network Config
+
+      AvailabilityZones:
+        default: Availability Zones
+      VPCCIDR:
+        default: VPC CIDR
+      PrivateSubnet1CIDR:
+        default: Private subnet 1 CIDR
+      PrivateSubnet2CIDR:
+        default: Private subnet 2 CIDR
+      PublicSubnet1CIDR:
+        default: Public subnet 1 CIDR
+      PublicSubnet2CIDR:
+        default: Public subnet 2 CIDR
+      RemoteAccessCIDR:
+        default: Allowed bastion external access CIDR
+
+      # Bastion Config
+
+      BastionInstanceType:
+        default: Bastion instance type
+      BastionKeyPairName:
+        default: Key pair name
+      BastionAMIOS:
+        default: Bastion AMI operating system
+
+      # Master Config
+
+      VSensorMasterHostname:
+        default: Master Appliance Hostname  
+      VSensorMasterPort:
+        default: Master Appliance Port
+      VSensorMasterPushtoken:
+        default: Master Appliance Push Token  
+
+      # vSensor Config
+
+      VSensorInstanceType:
+        default: EC2 Instance Type
+      VSensorKeyPairName:
+        default: Key pair name
+      VSensorUpdatekey:
+        default: Update Key
+      VSensorDesiredCapacityASG:
+        default: Desired vSensor instance capacity
+      VSensorMinSizeASG:
+        default: Minimum vSensor instance capacity
+      VSensorMaxSizeASG:
+        default: Maximum vSensor instance capacity
+
+      # Logs and PCAPs Config
+
+      VSensorLogGroupName:
+        default: CloudWatch Log Group
+      VSensorLogGroupRetention:
+        default: CloudWatch Log Retention (Days)
+      VSensorLifecycleS3BucketDays:
+        default: PCAP Storage Lifecycle (Days)
+
+      # Traffic Mirror Config
+      
+      VSensorTrafficMirrorRuleNumber:
+        default: Rule number for Traffic Mirror Rule
+      VSensorTrafficMirrorSourceCIDR:
+        default: Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
+      VSensorTrafficMirrorDestCIDR:
+        default: Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
+
+      # QuickStart Config
+
+      QSS3BucketName:
+        default: Quick Start S3 bucket name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
+      QSS3KeyPrefix:
+        default: Quick Start S3 Key Prefix
+
+Parameters:
+  # Master Config
+
+  VSensorMasterHostname:
+    Type: String
+    Description: Which Master Appliance should this vSensor connect to?
+  VSensorMasterPort:
+    Type: Number
+    Description: Which port should the vSensor connect to the Master on?
+    Default: 443
+  VSensorMasterPushtoken:
+    Type: String
+    Description: Push token to authenticate with the Master Appliance. Generate this from the Master's Config menu.
+
+  # VSensor Config
+
+  VSensorInstanceType:
+    Default: t3.medium
+    Type: String
+    Description: EC2 instance type. Default is t3.medium
+    AllowedValues:
+      - t3.medium
+      - m5.large
+      - m5.2xlarge
+      - m5.4xlarge
+  VSensorKeyPairName:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: Which EC2 Key-pair should be used to connect to the vSensor?
+  VSensorUpdatekey:
+    Type: String
+    Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
+    Default: 'XXXXXX:XXXX'
+  VSensorDesiredCapacityASG:
+    Type: Number
+    Description: Desired number of vSensor instances within the auto-scaling group.
+    Default: 1
+  VSensorMinSizeASG:
+    Type: String
+    Description: Minimum number of vSensor instances within the auto-scaling group.
+    Default: 1
+  VSensorMaxSizeASG:
+    Type: Number
+    Description: Maximum number of vSensor instances within the auto-scaling group.
+    Default: 5
+
+  # Network Config
+
+  AvailabilityZones:
+    Type: 'List<AWS::EC2::AvailabilityZone::Name>'
+    Description: List the Availability Zones that the vSensor should be launched in
+  VPCCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/16
+    Description: CIDR block for the VPC.
+    Type: String
+  PrivateSubnet1CIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/19
+    Description: CIDR block for private subnet 1 located in Availability Zone 1.
+    Type: String
+  PrivateSubnet2CIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.32.0/19
+    Description: CIDR block for private subnet 2 located in Availability Zone 2.
+    Type: String
+  PublicSubnet1CIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.128.0/20
+    Description: CIDR block for the public (DMZ) subnet 1 located in Availability
+      Zone 1.
+    Type: String
+  PublicSubnet2CIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.144.0/20
+    Description: CIDR block for the public (DMZ) subnet 2 located in Availability
+      Zone 2.
+    Type: String
+  RemoteAccessCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
+    Description: CIDR IP range that is permitted to access the bastions. We recommend
+      that you set this value to a trusted IP range.
+    Type: String
+  
+  # Bastion Config
+
+  BastionInstanceType:
+    AllowedValues:
+    - t2.nano
+    - t2.micro
+    - t2.small
+    - t2.medium
+    - t2.large
+    - m3.large
+    - m3.xlarge
+    - m3.2xlarge
+    - m4.large
+    - m4.xlarge
+    - m4.2xlarge
+    - m4.4xlarge
+    Default: t2.micro
+    Description: Amazon EC2 instance type for the bastion instances.
+    Type: String
+  BastionKeyPairName:
+    Description: Name of an existing public/private key pair, which allows you
+      to securely connect to your instance after it launches.
+    Type: AWS::EC2::KeyPair::KeyName
+  BastionAMIOS:
+    AllowedValues:
+      - Amazon-Linux2-HVM
+      - CentOS-7-HVM
+      - Ubuntu-Server-20.04-LTS-HVM
+      - SUSE-SLES-15-HVM
+    Default: Amazon-Linux2-HVM
+    Description: Linux distribution for the AMI to be used for the bastion instances.
+    Type: String
+
+  # Traffic Mirroring Config
+
+  VSensorTrafficMirrorRuleNumber:
+    Type: Number
+    Description: What number for the traffic mirror filter rule
+    Default: 100
+  VSensorTrafficMirrorSourceCIDR:
+    Type: String
+    Default: '0.0.0.0/0'
+    Description: Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
+  VSensorTrafficMirrorDestCIDR:
+    Type: String
+    Default: '0.0.0.0/0'
+    Description: Dest CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
+
+  # Logs & PCAPs Config
+
+  VSensorLogGroupName:
+    Type: String
+    Description: Enter the name for the vSensor Log Group
+    Default: Darktrace-vSensor-logs
+  VSensorLogGroupRetention:
+    Type: Number
+    AllowedValues:
+      - 1
+      - 3
+      - 5
+      - 7
+      - 14
+      - 30
+      - 60
+      - 90
+      - 120
+      - 150
+      - 180
+      - 365
+      - 400
+      - 545
+      - 731
+      - 1827
+      - 3653
+    Description: Select the number of days logs should be kept in CloudWatch
+    Default: 30
+  VSensorLifecycleS3BucketDays:
+    Type: Number
+    Description: Enter the number of days Packet Captures (PCAPs) should be kept for in S3
+    Default: 7
+
+  # QuickStart Config
+
+  QSS3BucketName:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+      (-).
+    Default: aws-quickstart
+    Description: S3 bucket name for the Quick Start assets. This string can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
+      or end with a hyphen (-).
+    Type: String
+  QSS3BucketRegion:
+    Default: 'eu-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: ^[0-9a-zA-Z-/]*$
+    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/).
+    Default: quickstart-examples/
+    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+
+Resources:
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL:
+        !Sub
+          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}/submodules/quickstart-aws-vpc/templates/aws-vpc.template'
+          - S3Region: !Ref QSS3BucketRegion
+            S3Bucket: !Ref QSS3BucketName
+      Parameters:
+        AvailabilityZones:
+          !Join
+            - ','
+            - Ref: AvailabilityZones
+        KeyPairName:
+          Ref: BastionKeyPairName
+        NumberOfAZs: '2'
+        PrivateSubnet1ACIDR:
+          Ref: PrivateSubnet1CIDR
+        PrivateSubnet2ACIDR:
+          Ref: PrivateSubnet2CIDR
+        PublicSubnet1CIDR:
+          Ref: PublicSubnet1CIDR
+        PublicSubnet2CIDR:
+          Ref: PublicSubnet2CIDR
+        VPCCIDR:
+          Ref: VPCCIDR
+  BastionStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL:
+        !Sub
+          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}/submodules/quickstart-linux-bastion/templates/linux-bastion.template'
+          - S3Region: !Ref QSS3BucketRegion
+            S3Bucket: !Ref QSS3BucketName
+      Parameters:
+        QSS3BucketName: 
+          Ref: QSS3BucketName
+        QSS3BucketRegion: 
+          Ref: QSS3BucketRegion
+        QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}/submodules/quickstart-linux-bastion/'
+        BastionHostName: !Sub 'DT-vSensorBastion-${AWS::StackName}'
+        BastionAMIOS:
+          Ref: BastionAMIOS
+        BastionInstanceType:
+          Ref: BastionInstanceType
+        KeyPairName:
+          Ref: BastionKeyPairName
+        PublicSubnet1ID:
+          !GetAtt
+            - VPCStack
+            - Outputs.PublicSubnet1ID
+        PublicSubnet2ID:
+          !GetAtt
+            - VPCStack
+            - Outputs.PublicSubnet2ID
+        RemoteAccessCIDR:
+          Ref: RemoteAccessCIDR
+        VPCID:
+          !GetAtt
+            - VPCStack
+            - Outputs.VPCID
+  VSensorStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL:
+        !Sub
+          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}/templates/darktrace-vsensor-main.template.yaml'
+          - S3Region: !Ref QSS3BucketRegion
+            S3Bucket: !Ref QSS3BucketName
+      Parameters:
+        MasterHostname: !Ref VSensorMasterHostname
+        MasterPort: !Ref VSensorMasterPort
+        MasterPushtoken: !Ref VSensorMasterPushtoken
+        VsensorUpdatekey: !Ref VSensorUpdatekey
+        Subnets:
+          !Join
+            - ","
+            - - Fn::GetAtt:
+                - VPCStack
+                - Outputs.PrivateSubnet1AID
+              - Fn::GetAtt:
+                - VPCStack
+                - Outputs.PrivateSubnet2AID
+        DeploymentVPC:
+          !GetAtt
+            - VPCStack
+            - Outputs.VPCID
+        InstanceType: !Ref VSensorInstanceType
+        InstanceSecurityGroups:
+          !Join
+            - ","
+            - - Fn::GetAtt:
+                - BastionStack
+                - Outputs.BastionSecurityGroupID
+        LifecycleS3BucketDays: !Ref VSensorLifecycleS3BucketDays
+        DesiredCapacityASG: !Ref VSensorDesiredCapacityASG
+        MinSizeASG: !Ref VSensorMinSizeASG
+        MaxSizeASG: !Ref VSensorMaxSizeASG
+        LogGroupName: !Ref VSensorLogGroupName
+        LogGroupRetention: !Ref VSensorLogGroupRetention
+        TrafficMirrorRuleNumber: !Ref VSensorTrafficMirrorRuleNumber
+        TrafficMirrorSourceCIDR: !Ref VSensorTrafficMirrorSourceCIDR
+        TrafficMirrorDestCIDR: !Ref VSensorTrafficMirrorDestCIDR
+        VpcCIDRBlock: !Ref VPCCIDR
+        SshCIDRBlock: !Ref VPCCIDR
+        KeyPairName:
+          Ref: VSensorKeyPairName

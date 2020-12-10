@@ -1,0 +1,712 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template deploys an auto-scaling vSensor cluster for monitoring existing VPC subnets. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.
+
+# Ubuntu 20.04 Base AMIs
+Mappings:
+  RegionMap:
+    ap-southeast-1:
+      "UBUNTU": "ami-0c20b8b385217763f"
+    ap-southeast-2:
+      "UBUNTU": "ami-07fbdcfe29326c4fb"
+    ca-central-1:
+      "UBUNTU": "ami-02e44367276fe7adc"
+    eu-central-1:
+      "UBUNTU": "ami-0502e817a62226e03"
+    eu-west-1:
+      "UBUNTU": "ami-09b9e380df60300c8" # Note this one is 16.04 at the moment for testing.
+    eu-west-2:
+      "UBUNTU": "ami-0ff4c8fb495a5a50d"
+    eu-west-3:
+      "UBUNTU": "ami-0d3f551818b21ed81"
+    us-east-1:
+      "UBUNTU": "ami-0885b1f6bd170450c"
+    us-west-1:
+      "UBUNTU": "ami-00831fc7c1e3ddc60"
+    us-west-2:
+      "UBUNTU": "ami-07dd19a7900a1f049"
+
+Metadata:
+  QuickStartDocumentation:
+    EntrypointName: "Launch into an existing VPC"
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Master Appliance Configuration
+        Parameters:
+          - MasterHostname
+          - MasterPort
+          - MasterPushtoken
+      - Label:
+          default: vSensor Configuration
+        Parameters:
+          - InstanceType
+          - KeyPairName
+          - InstanceSecurityGroups
+          - VsensorUpdatekey
+          - DesiredCapacityASG
+          - MinSizeASG
+          - MaxSizeASG
+      - Label:
+          default: Networking Configuration
+        Parameters:
+          - DeploymentVPC
+          - VpcCIDRBlock
+          - SshCIDRBlock
+          - Subnets
+      - Label:
+          default: Traffic Mirror Configuration
+        Parameters:
+          - TrafficMirrorRuleNumber
+          - TrafficMirrorSourceCIDR
+          - TrafficMirrorDestCIDR
+      - Label:
+          default: Logs & PCAPS Configuration
+        Parameters:
+          - LogGroupName
+          - LogGroupRetention
+          - LifecycleS3BucketDays
+
+
+    ParameterLabels:
+      # Master Config
+      MasterHostname:
+        default: Master Appliance Hostname  
+      MasterPort:
+        default: Master Appliance Port
+      MasterPushtoken:
+        default: Master Appliance Push Token  
+      # vSensor Config
+      InstanceType:
+        default: EC2 Instance Type
+      KeyPairName:
+        default: EC2 Key-pair Name
+      InstanceSecurityGroups:
+        default: Security Groups
+      VsensorUpdatekey:
+        default: Update Key
+      DesiredCapacityASG:
+        default: Desired vSensor instance capacity
+      MinSizeASG:
+        default: Minimum vSensor instance capacity
+      MaxSizeASG:
+        default: Maximum vSensor instance capacity
+      # Networking Config
+      DeploymentVPC:
+        default: Deployment VPC
+      VpcCIDRBlock:
+        default: VPC CDIR Block
+      SshCIDRBlock:
+        default: SSH CDIR Block
+      Subnets:
+        default: Subnets
+      # Traffic Mirror Config
+      TrafficMirrorRuleNumber:
+        default: Rule number for Traffic Mirror Rule
+      TrafficMirrorSourceCIDR:
+        default: Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
+      TrafficMirrorDestCIDR:
+        default: Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
+      # Logs and PCAPs Config
+      LogGroupName:
+        default: CloudWatch Log Group
+      LogGroupRetention:
+        default: CloudWatch Log Retention (Days)
+      LifecycleS3BucketDays:
+        default: PCAP Storage Lifecycle (Days)
+
+
+Parameters:
+  # Master Config
+
+  MasterHostname:
+    Type: String
+    Description: Which Master Appliance should this vSensor connect to?
+  MasterPort:
+    Type: Number
+    Description: Which port should the vSensor connect to the Master on?
+    Default: 443
+  MasterPushtoken:
+    Type: String
+    Description: Push token to authenticate with the Master Appliance. Generate this from the Master's Config menu.
+
+  # vSensor Config
+
+  InstanceType:
+    Default: t3.medium
+    Type: String
+    Description: EC2 instance type. Default is t3.medium
+    AllowedValues:
+      - t3.medium
+      - m5.large
+      - m5.2xlarge
+      - m5.4xlarge
+  KeyPairName:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: Which EC2 Key-pair should be used to connect to the vSensor?
+  InstanceSecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: Which AWS Security Group IDs would you like to apply for the vSensor? Note that a basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.
+  VsensorUpdatekey:
+    Type: String
+    Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
+    Default: 'XXXXXX:XXXX'
+  DesiredCapacityASG:
+    Type: Number
+    Description: Desired number of vSensor instances within the auto-scaling group.
+    Default: 1
+  MinSizeASG:
+    Type: String
+    Description: Minimum number of vSensor instances within the auto-scaling group.
+    Default: 1
+  MaxSizeASG:
+    Type: Number
+    Description: Maximum number of vSensor instances within the auto-scaling group.
+    Default: 5
+
+  # Networking Config
+
+  DeploymentVPC:
+    Type: 'AWS::EC2::VPC::Id'
+    Description: 'VPC of target deployment'
+  VpcCIDRBlock:
+    Type: String
+    Default: '172.16.0.0/12'
+    Description: 'CIDR Block of VPC' # TODO: Do we need this? We should find it from DeploymentVPC.
+  SshCIDRBlock:
+    Type: String
+    Default: '172.16.0.0/12'
+    Description: 'CIDR Block of allowed SSH Access to vSensors.'
+  Subnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: >-
+      List the Subnet Ids that the vSensor should be launched into.
+      You can specify at most one subnet per Availability Zone.
+
+  # Traffic Mirror Config
+
+  TrafficMirrorRuleNumber:
+    Type: Number
+    Description: What number for the traffic mirror filter rule
+    Default: 100
+  TrafficMirrorSourceCIDR:
+    Type: String
+    Default: '0.0.0.0/0'
+    Description: Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
+  TrafficMirrorDestCIDR:
+    Type: String
+    Default: '0.0.0.0/0'
+    Description: Dest CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
+  
+  # Logs & PCAPs Config
+
+  LogGroupName:
+    Type: String
+    Description: Enter the name for the vSensor Log Group
+    Default: Darktrace-vSensor-logs
+  LogGroupRetention:
+    Type: Number
+    AllowedValues:
+      - 1
+      - 3
+      - 5
+      - 7
+      - 14
+      - 30
+      - 60
+      - 90
+      - 120
+      - 150
+      - 180
+      - 365
+      - 400
+      - 545
+      - 731
+      - 1827
+      - 3653
+    Description: Select the number of days logs should be kept in CloudWatch
+    Default: 30
+  LifecycleS3BucketDays:
+    Type: Number
+    Description: Enter the number of days Packet Captures (PCAPs) should be kept for in S3
+    Default: 7
+
+
+AWSTemplateFormatVersion: 2010-09-09
+Outputs:
+  BucketName:
+    Description: Name of the PCAP S3 bucket.
+    Value: !Ref PCAPS
+Description: >-
+  One-click deploy for vSensor. Creates an auto-scaling vSensor with
+  traffic-mirroring policies
+Resources:
+  SecurityGroupvSensor:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for ASG vSensor"
+      GroupName: Darktrace-vSensor
+      VpcId: !Ref DeploymentVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SshCIDRBlock
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref VpcCIDRBlock
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref VpcCIDRBlock
+        - IpProtocol: udp
+          FromPort: 4789
+          ToPort: 4789
+          CidrIp: !Ref VpcCIDRBlock
+  ScaleDownAlarmMEM:
+    Type: AWS::CloudWatch::Alarm
+    Properties: 
+      AlarmActions:
+        - !Ref ScaleDownPolicy
+      AlarmDescription: Alarm to decide when vSensor should scale down
+      AlarmName: vSensorScalingDownMEM
+      ComparisonOperator: LessThanOrEqualToThreshold
+      EvaluationPeriods: 5
+      MetricName: "mem_used_percent"
+      Statistic: Average
+      Namespace: vSensorMetrics
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref ASG
+      Period: 60
+      Threshold: 25
+  ScaleUpAlarmCPU:
+    Type: AWS::CloudWatch::Alarm
+    Properties: 
+      AlarmActions:
+        - !Ref ScaleUpPolicy
+      AlarmDescription: Alarm to decide when vSensor should scale up
+      AlarmName: vSensorScalingUpCPU
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 5
+      MetricName: "cpu_usage_active"
+      Statistic: Average
+      Namespace: vSensorMetrics
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref ASG
+      Period: 60
+      Threshold: 75
+  ScaleUpAlarmMEM:
+    Type: AWS::CloudWatch::Alarm
+    Properties: 
+      AlarmActions:
+        - !Ref ScaleUpPolicy
+      AlarmDescription: Alarm to decide when vSensor should scale up
+      AlarmName: vSensorScalingUpMEM
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 5
+      MetricName: "mem_used_percent"
+      Statistic: Average
+      Namespace: vSensorMetrics
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref ASG
+      Period: 60
+      Threshold: 75
+  ScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties: 
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref ASG
+      MetricAggregationType: Average
+      PolicyType: StepScaling
+      StepAdjustments: 
+        - MetricIntervalUpperBound: -15
+          ScalingAdjustment: -2
+        - MetricIntervalLowerBound: -15
+          MetricIntervalUpperBound: 0
+          ScalingAdjustment: -1
+  ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties: 
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref ASG
+      MetricAggregationType: Average
+      PolicyType: StepScaling
+      StepAdjustments: 
+        - MetricIntervalLowerBound: 0
+          MetricIntervalUpperBound: 15
+          ScalingAdjustment: 1
+        - MetricIntervalLowerBound: 15
+          ScalingAdjustment: 2
+  LaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateData:
+        UserData: !Base64 
+          'Fn::Sub': |
+            #!/bin/bash
+            apt update
+            bash <(wget -O - https://packages.darktrace.com/install) --updateKey ${VsensorUpdatekey}
+            #set updatekey, upgrade and enable daily updates
+            set_updatekey.sh ${VsensorUpdatekey}
+            repo-control.sh -nevua ${VsensorUpdatekey}
+            sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
+            set_pushtoken.sh ${MasterPushtoken} ${MasterHostname}:${MasterPort}
+            set_pcap_s3_bucket.sh ${PCAPS}
+            cat >CW_AGENT.conf <<'EOF'
+            {
+              "agent": {
+                "metrics_collection_interval": 60,
+                "run_as_user": "root"
+              },
+              "logs": {
+                "logs_collected": {
+                  "files": {
+                    "collect_list": [
+                      {
+                        "file_path": "/var/log/syslog",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/sabreserver/lite/sabreserverlite.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/darktrace-apt-dist-upgrade.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/dpkg.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/darktrace-bro-keepalive.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/apt/term.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/apt/history.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/darktrace-sabre-mole/manager.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      },
+                      {
+                        "file_path": "/var/log/nginx/access.log",
+                        "log_group_name": "${vSensorLogGroup}",
+                        "log_stream_name": "{instance_id}"
+                      }
+                    ]
+                  }
+                }
+              },
+              "metrics": {
+                "namespace": "vSensorMetrics",
+                "append_dimensions": {
+                  "AutoScalingGroupName": "${!aws:AutoScalingGroupName}",
+                  "ImageId": "${!aws:ImageId}",
+                  "InstanceId": "${!aws:InstanceId}",
+                  "InstanceType": "${!aws:InstanceType}"
+                },
+                "aggregation_dimensions": [["AutoScalingGroupName"], ["InstanceId", "InstanceType"]],
+                "metrics_collected": {
+                  "collectd": {
+                    "metrics_aggregation_interval": 60
+                  },
+                  "cpu": {
+                    "measurement": [
+                      "cpu_usage_active",
+                      "cpu_usage_iowait",
+                      "cpu_usage_user",
+                      "cpu_usage_system"
+                    ],
+                    "metrics_collection_interval": 60,
+                    "resources": [
+                      "*"
+                    ],
+                    "totalcpu": false
+                  },
+                  "disk": {
+                    "measurement": [
+                      "used_percent",
+                      "inodes_free"
+                    ],
+                    "metrics_collection_interval": 60,
+                    "resources": [
+                      "*"
+                    ]
+                  },
+                  "diskio": {
+                    "measurement": [
+                      "io_time"
+                    ],
+                    "metrics_collection_interval": 60,
+                    "resources": [
+                      "*"
+                    ]
+                  },
+                  "mem": {
+                    "measurement": [
+                      "mem_used_percent"
+                    ],
+                    "metrics_collection_interval": 60
+                  },
+                  "net": {
+                    "measurement": [
+                      "net_bytes_recv",
+                      "net_bytes_sent",
+                      "net_drop_in",
+                      "net_drop_out",
+                      "net_err_in",
+                      "net_err_out",
+                      "net_packets_sent",
+                      "net_packets_recv"
+                    ],
+                    "metrics_collection_interval": 60,
+                    "resources": [
+                      "*"
+                    ]
+                  },
+                  "statsd": {
+                    "metrics_aggregation_interval": 60,
+                    "metrics_collection_interval": 10,
+                    "service_address": ":8125"
+                  },
+                  "swap": {
+                    "measurement": [
+                      "swap_used_percent"
+                    ],
+                    "metrics_collection_interval": 60
+                  }
+                }
+              }
+            }
+            EOF
+            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:./CW_AGENT.conf -s
+        KeyName: !Ref KeyPairName
+        InstanceType: !Ref InstanceType
+        BlockDeviceMappings:
+          - DeviceName: "/dev/sda1"
+            Ebs:
+              VolumeSize: 20
+        SecurityGroupIds: !Split
+            - ","
+            - !Sub 
+              - "${customerSecurityGroups},${SecurityGroupvSensor}"
+              - customerSecurityGroups: !Join [",", !Ref "InstanceSecurityGroups"]
+        IamInstanceProfile:
+          Arn: !GetAtt PcapIamInstanceProfile.Arn
+        ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", UBUNTU]
+      LaunchTemplateName: !Sub '${AWS::StackName}-launch-template'
+  vSensorLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Ref LogGroupName
+      RetentionInDays: !Ref LogGroupRetention
+  TrafficMirrorTarget:
+    Type: 'AWS::EC2::TrafficMirrorTarget'
+    Properties:
+      NetworkLoadBalancerArn: !Ref LoadBalancer
+      Description: Traffic mirror target associated with a network load balancer
+      Tags:
+        - Key: "Name"
+          Value: "Darktrace vSensor Traffic Mirror Target"
+  TrafficMirrorFilter:
+    Type: 'AWS::EC2::TrafficMirrorFilter'
+    Properties:
+      Description: Mirror filter for autoscaling vsensor, allow all from given CIDR range
+      Tags:
+        - Key: "Name"
+          Value: "Darktrace vSensor Traffic filter"
+  TrafficMirrorFilterRuleIngress:
+    Type: AWS::EC2::TrafficMirrorFilterRule
+    Properties: 
+      Description: 'allow all ingress'
+      DestinationCidrBlock: !Ref TrafficMirrorDestCIDR
+      RuleAction: 'accept'
+      RuleNumber: !Ref TrafficMirrorRuleNumber
+      SourceCidrBlock: !Ref TrafficMirrorSourceCIDR
+      TrafficDirection: 'ingress'
+      TrafficMirrorFilterId: !Ref TrafficMirrorFilter
+
+  TrafficMirrorFilterRuleEgress:
+    Type: AWS::EC2::TrafficMirrorFilterRule
+    Properties: 
+      Description: 'allow all egress'
+      DestinationCidrBlock: !Ref TrafficMirrorDestCIDR
+      RuleAction: 'accept'
+      RuleNumber: !Ref TrafficMirrorRuleNumber
+      SourceCidrBlock: !Ref TrafficMirrorSourceCIDR
+      TrafficDirection: 'egress'
+      TrafficMirrorFilterId: !Ref TrafficMirrorFilter
+
+  TargetGroupUDP4789:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties: 
+      Name: 'ASG-vsensor-UDP-4789'
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: '443'
+      HealthCheckProtocol: HTTPS
+      Port: 4789
+      Protocol: 'UDP'
+      TargetType: 'instance'
+      VpcId: !Ref DeploymentVPC
+
+  TargetGroupTCP443:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties: 
+      Name: 'ASG-vsensor-TCP-443'
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: '443'
+      HealthCheckProtocol: HTTPS
+      Port: 443
+      Protocol: 'TCP'
+      TargetType: 'instance'
+      VpcId: !Ref DeploymentVPC
+
+  ASG:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      MinSize: !Ref MinSizeASG
+      MaxSize: !Ref MaxSizeASG
+      MetricsCollection: 
+        - Granularity: 1Minute
+      DesiredCapacity: !Ref DesiredCapacityASG
+      VPCZoneIdentifier: !Ref Subnets
+      TargetGroupARNs: 
+        - !Ref TargetGroupUDP4789
+        - !Ref TargetGroupTCP443
+      LaunchTemplate:
+        Version: !GetAtt 
+          - LaunchTemplate
+          - LatestVersionNumber
+        LaunchTemplateId: !Ref LaunchTemplate
+      Tags:  
+        - Key: Name
+          PropagateAtLaunch: True
+          Value: !Sub 'DT-vSensor-${AWS::StackName}'
+  PCAPS:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: !Sub 'DeleteAfter${LifecycleS3BucketDays}Days'
+            ExpirationInDays: !Ref LifecycleS3BucketDays
+            Status: Enabled
+
+  LoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      LoadBalancerAttributes:
+        - Key: load_balancing.cross_zone.enabled
+          Value: 'true'
+      Subnets: !Ref Subnets
+      Scheme: internal
+      Type: network
+
+  LoadBalancerListenerUDP4789:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      DefaultActions: 
+       - Type: "forward"
+         TargetGroupArn: !Ref TargetGroupUDP4789
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 4789
+      Protocol: 'UDP'
+
+  LoadBalancerListenerTCP443:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      DefaultActions: 
+       - Type: "forward"
+         TargetGroupArn: !Ref TargetGroupTCP443
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: 'TCP'
+
+  PcapIamInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - Ref: S3PCAPIamRole
+  S3PCAPIamRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CloudWatchAgentServerRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudwatch:PutMetricData'
+                  - 'cloudwatch:GetMetricStatistics'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DescribeTags'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:CreateLogStream'
+                  - 'logs:CreateLogGroup'
+                Resource:
+                  - '*'
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                Resource:
+                  - 'arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*'
+        - PolicyName: ListPCAPBucket
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - 's3:ListBucket'
+                - 's3:GetBucketLocation'
+                - 's3:GetLifecycleConfiguration'
+              Resource:
+                - !Sub 'arn:aws:s3:::${PCAPS}'
+        - PolicyName: AccessPCAPBucket
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - 's3:PutObject'
+                - 's3:GetObject'
+                - 's3:DeleteObject'
+                - 's3:PutObjectTagging'
+              Resource:
+                - !Sub 'arn:aws:s3:::${PCAPS}/*'

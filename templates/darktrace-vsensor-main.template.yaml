@@ -114,7 +114,6 @@ Metadata:
       LifecycleS3BucketDays:
         default: PCAP Storage Lifecycle (Days)
 
-
 Parameters:
   # Master Config
 
@@ -230,15 +229,11 @@ Parameters:
     Description: Enter the number of days Packet Captures (PCAPs) should be kept for in S3
     Default: 7
 
-
-AWSTemplateFormatVersion: 2010-09-09
 Outputs:
   BucketName:
     Description: Name of the PCAP S3 bucket.
     Value: !Ref PCAPS
-Description: >-
-  One-click deploy for vSensor. Creates an auto-scaling vSensor with
-  traffic-mirroring policies
+
 Resources:
   SecurityGroupvSensor:
     Type: AWS::EC2::SecurityGroup

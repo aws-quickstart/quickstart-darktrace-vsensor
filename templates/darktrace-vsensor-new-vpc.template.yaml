@@ -1,7 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: This template creates a VPC infrastructure for a multi-AZ vSensor deployment on AWS. It deploys a VPC, bastion and scalable Darktrace vSensor cluster
   behind an ELB. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.
+
 Metadata:
+
   QuickStartDocumentation:
     EntrypointName: "Launch into a new VPC"
   OptionalParameters:
@@ -57,6 +59,7 @@ Metadata:
         - QSS3BucketName
         - QSS3BucketRegion
         - QSS3KeyPrefix
+
     ParameterLabels:
       # Network Config
 
@@ -227,20 +230,15 @@ Parameters:
   # Bastion Config
 
   BastionInstanceType:
+    # Limit to Nitro instances, compatible with Traffic Mirroring.
     AllowedValues:
-    - t2.nano
-    - t2.micro
-    - t2.small
-    - t2.medium
-    - t2.large
-    - m3.large
-    - m3.xlarge
-    - m3.2xlarge
-    - m4.large
-    - m4.xlarge
-    - m4.2xlarge
-    - m4.4xlarge
-    Default: t2.micro
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+    Default: t3.micro
     Description: Amazon EC2 instance type for the bastion instances.
     Type: String
   BastionKeyPairName:
@@ -332,6 +330,7 @@ Parameters:
     Type: String
 
 Resources:
+
   VPCStack:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
@@ -359,7 +358,9 @@ Resources:
           Ref: PublicSubnet2CIDR
         VPCCIDR:
           Ref: VPCCIDR
+
   BastionStack:
+
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
@@ -395,7 +396,9 @@ Resources:
           !GetAtt
             - VPCStack
             - Outputs.VPCID
+
   VSensorStack:
+    
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:

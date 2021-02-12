@@ -277,7 +277,7 @@ Parameters:
   VSensorLogGroupName:
     Type: String
     Description: Enter the name for the vSensor Log Group
-    Default: Darktrace-vSensor-logs
+    Default: Darktrace-vSensor-Logs
   VSensorLogGroupRetention:
     Type: Number
     AllowedValues:
@@ -440,5 +440,9 @@ Resources:
         TrafficMirrorDestCIDR: !Ref VSensorTrafficMirrorDestCIDR
         VpcCIDRBlock: !Ref VPCCIDR
         SshCIDRBlock: !Ref VPCCIDR
-        KeyPairName:
-          Ref: VSensorKeyPairName
+        KeyPairName: !Ref VSensorKeyPairName
+        QSURL:
+          !Sub
+            - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}'
+            - S3Region: !Ref QSS3BucketRegion
+              S3Bucket: !Ref QSS3BucketName

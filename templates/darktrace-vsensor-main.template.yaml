@@ -215,11 +215,12 @@ Parameters:
   QSURL:
     Type: String
     Description: "QuickStart Bucket URL"
-
+    
 Outputs:
   BucketName:
     Description: Name of the PCAP S3 bucket.
     Value: !Ref PCAPS
+
 
 Resources:
 
@@ -247,6 +248,7 @@ Resources:
         KeyPairName: !Ref KeyPairName
 
 
+Resources:
   SecurityGroupvSensor:
     Type: AWS::EC2::SecurityGroup
     Properties:

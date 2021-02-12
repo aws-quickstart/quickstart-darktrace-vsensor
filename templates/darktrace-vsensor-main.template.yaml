@@ -216,11 +216,6 @@ Parameters:
     Type: String
     Description: "QuickStart Bucket URL"
 
-Outputs:
-  BucketName:
-    Description: Name of the PCAP S3 bucket.
-    Value: !Ref PCAPS
-
 Resources:
 
   CustomAmiName:
@@ -246,7 +241,6 @@ Resources:
         LogGroupName: !Ref LogGroupName
         KeyPairName: !Ref KeyPairName
 
-
   SecurityGroupvSensor:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -270,6 +264,7 @@ Resources:
           FromPort: 4789
           ToPort: 4789
           CidrIp: !Ref VpcCIDRBlock
+
   ScaleDownAlarmMEM:
     Type: AWS::CloudWatch::Alarm
     Properties: 
@@ -287,6 +282,7 @@ Resources:
         Value: !Ref ASG
       Period: 60
       Threshold: 25
+
   ScaleUpAlarmCPU:
     Type: AWS::CloudWatch::Alarm
     Properties: 
@@ -304,6 +300,7 @@ Resources:
         Value: !Ref ASG
       Period: 60
       Threshold: 75
+
   ScaleUpAlarmMEM:
     Type: AWS::CloudWatch::Alarm
     Properties: 
@@ -321,6 +318,7 @@ Resources:
         Value: !Ref ASG
       Period: 60
       Threshold: 75
+
   ScaleDownPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
@@ -334,6 +332,7 @@ Resources:
         - MetricIntervalLowerBound: -15
           MetricIntervalUpperBound: 0
           ScalingAdjustment: -1
+
   ScaleUpPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
@@ -347,6 +346,7 @@ Resources:
           ScalingAdjustment: 1
         - MetricIntervalLowerBound: 15
           ScalingAdjustment: 2
+
   LaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     DependsOn: "CreateAMIStack"
@@ -518,6 +518,7 @@ Resources:
           Arn: !GetAtt PcapIamInstanceProfile.Arn
         ImageId: !GetAtt CustomAmiName.Value
       LaunchTemplateName: !Sub '${AWS::StackName}-launch-template'
+
   vSensorLogGroup:
     Type: 'AWS::Logs::LogGroup'
     #DeletionPolicy: Retain
@@ -525,6 +526,7 @@ Resources:
     Properties:
       LogGroupName: !Ref LogGroupName
       RetentionInDays: !Ref LogGroupRetention
+
   TrafficMirrorTarget:
     Type: 'AWS::EC2::TrafficMirrorTarget'
     Properties:
@@ -533,6 +535,7 @@ Resources:
       Tags:
         - Key: "Name"
           Value: "Darktrace vSensor Traffic Mirror Target"
+
   TrafficMirrorFilter:
     Type: 'AWS::EC2::TrafficMirrorFilter'
     Properties:
@@ -540,6 +543,7 @@ Resources:
       Tags:
         - Key: "Name"
           Value: "Darktrace vSensor Traffic filter"
+
   TrafficMirrorFilterRuleIngress:
     Type: AWS::EC2::TrafficMirrorFilterRule
     Properties: 
@@ -718,3 +722,8 @@ Resources:
                 - 's3:PutObjectTagging'
               Resource:
                 - !Sub 'arn:aws:s3:::${PCAPS}/*'
+
+Outputs:
+  BucketName:
+    Description: Name of the PCAP S3 bucket.
+    Value: !Ref PCAPS

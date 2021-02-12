@@ -1,6 +1,48 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: "This template is used to build the Vsensor AMI."
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Darktrace vSensor AMI Generation Parameters
+        Parameters:
+          - TargetAMIName
+          - RootStackName
+          - VsensorUpdatekey
+          - LogGroupName
+          - KeyPairName
+    ParameterLabels:
+      TargetAMIName:
+        default: Name for newly created AMI
+      RootStackName:
+        default: Name of the calling stack, to set the custom AMI id once generated.
+      VsensorUpdatekey:
+        default: Update Key
+      LogGroupName:
+        default: CloudWatch Log Group
+      KeyPairName:
+        default: EC2 Key-pair Name
+
+Parameters:
+  TargetAMIName:
+    Type: String
+    Description: Name for newly created AMI
+  RootStackName:
+    Type: String
+    Description: Name of the calling stack, to set the custom AMI id once generated.
+  VsensorUpdatekey:
+    Type: String
+    Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
+    Default: 'XXXXXX:XXXX'
+  LogGroupName:
+    Type: String
+    Description: The CloudWatch log group that the AMI creation process should log to.
+    Default: Darktrace-vSensor-Quickstart
+  KeyPairName:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: Which EC2 Key-pair should be used to connect to the vSensor?
+
 # Ubuntu 20.04 Base AMIs
 Mappings:
   RegionMap:
@@ -44,49 +86,6 @@ Mappings:
       "UBUNTU": "ami-00831fc7c1e3ddc60"
     us-west-2:
       "UBUNTU": "ami-07dd19a7900a1f049"
-
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-      - Label:
-          default: Darktrace vSensor AMI Generation Parameters
-        Parameters:
-          - TargetAMIName
-          - RootStackName
-          - VsensorUpdatekey
-          - LogGroupName
-          - KeyPairName
-    ParameterLabels:
-      TargetAMIName:
-        default: Name for newly created AMI
-      RootStackName:
-        default: Name of the calling stack, to set the custom AMI id once generated.
-      VsensorUpdatekey:
-        default: Update Key
-      LogGroupName:
-        default: CloudWatch Log Group
-      KeyPairName:
-        default: EC2 Key-pair Name
-
-Parameters:
-  TargetAMIName:
-    Type: String
-    Description: Name for newly created AMI
-  RootStackName:
-    Type: String
-    Description: Name of the calling stack, to set the custom AMI id once generated.
-  VsensorUpdatekey:
-    Type: String
-    Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
-    Default: 'XXXXXX:XXXX'
-  LogGroupName:
-    Type: String
-    Description: The CloudWatch log group that the AMI creation process should log to.
-    Default: Darktrace-vSensor-Quickstart
-  KeyPairName:
-    Type: 'AWS::EC2::KeyPair::KeyName'
-    Description: Which EC2 Key-pair should be used to connect to the vSensor?
-
 
 Resources:
 
@@ -214,6 +213,7 @@ Resources:
                   - ssmmessages:*
                 Resource:
                   - '*'
+                  
   AMIInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -241,6 +241,7 @@ Resources:
               - "apt update"
               - "apt install -y awscli"
               - !Sub "aws ssm start-automation-execution --document-name ${SsmAMIBuild} --region ${AWS::Region}"
+
   SsmAMIBuild:
     Type: AWS::SSM::Document
     Properties:

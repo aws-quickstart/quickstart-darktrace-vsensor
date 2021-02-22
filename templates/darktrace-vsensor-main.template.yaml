@@ -7,11 +7,11 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Master Appliance Configuration
+          default: Appliance Configuration
         Parameters:
-          - MasterHostname
-          - MasterPort
-          - MasterPushtoken
+          - ApplianceHostname
+          - AppliancePort
+          - AppliancePushtoken
       - Label:
           default: vSensor Configuration
         Parameters:
@@ -48,13 +48,13 @@ Metadata:
 
 
     ParameterLabels:
-      # Master Config
-      MasterHostname:
-        default: Master Appliance Hostname  
-      MasterPort:
-        default: Master Appliance Port
-      MasterPushtoken:
-        default: Master Appliance Push Token  
+      # Appliance Config
+      ApplianceHostname:
+        default: Appliance Hostname  
+      AppliancePort:
+        default: Appliance Port
+      AppliancePushtoken:
+        default: Appliance Push Token  
       # vSensor Config
       InstanceType:
         default: EC2 Instance Type
@@ -98,18 +98,18 @@ Metadata:
         default: "Quickstart bucket URL"
 
 Parameters:
-  # Master Config
+  # Appliance Config
 
-  MasterHostname:
+  ApplianceHostname:
     Type: String
-    Description: Which Master Appliance should this vSensor connect to?
-  MasterPort:
+    Description: Which Appliance should this vSensor connect to?
+  AppliancePort:
     Type: Number
-    Description: Which port should the vSensor connect to the Master on?
+    Description: Which port should the vSensor connect to the Appliance on?
     Default: 443
-  MasterPushtoken:
+  AppliancePushtoken:
     Type: String
-    Description: Push token to authenticate with the Master Appliance. Generate this from the Master's Config menu.
+    Description: Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
 
   # vSensor Config
 
@@ -359,7 +359,7 @@ Resources:
             set_updatekey.sh ${VsensorUpdatekey}
             repo-control.sh -nevua ${VsensorUpdatekey}
             sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
-            set_pushtoken.sh ${MasterPushtoken} ${MasterHostname}:${MasterPort}
+            set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
             set_pcap_s3_bucket.sh ${PCAPS}
             cat >CW_AGENT.conf <<'EOF'
             {

@@ -27,11 +27,11 @@ Metadata:
         - BastionKeyPairName
         - BastionAMIOS
     - Label:
-        default: Master Appliance Configuration
+        default: Appliance Configuration
       Parameters:
-        - VSensorMasterHostname
-        - VSensorMasterPort
-        - VSensorMasterPushtoken
+        - VSensorApplianceHostname
+        - VSensorAppliancePort
+        - VSensorAppliancePushtoken
     - Label:
         default: vSensor Configuration
       Parameters:
@@ -87,14 +87,14 @@ Metadata:
       BastionAMIOS:
         default: Bastion AMI operating system
 
-      # Master Config
+      # Appliance Config
 
-      VSensorMasterHostname:
-        default: Master Appliance Hostname  
-      VSensorMasterPort:
-        default: Master Appliance Port
-      VSensorMasterPushtoken:
-        default: Master Appliance Push Token  
+      VSensorApplianceHostname:
+        default: Appliance Hostname  
+      VSensorAppliancePort:
+        default: Appliance Port
+      VSensorAppliancePushtoken:
+        default: Appliance Push Token  
 
       # vSensor Config
 
@@ -139,18 +139,18 @@ Metadata:
         default: Quick Start S3 Key Prefix
 
 Parameters:
-  # Master Config
+  # Appliance Config
 
-  VSensorMasterHostname:
+  VSensorApplianceHostname:
     Type: String
-    Description: Which Master Appliance should this vSensor connect to?
-  VSensorMasterPort:
+    Description: Which Appliance should this vSensor connect to?
+  VSensorAppliancePort:
     Type: Number
-    Description: Which port should the vSensor connect to the Master on?
+    Description: Which port should the vSensor connect to the Appliance on?
     Default: 443
-  VSensorMasterPushtoken:
+  VSensorAppliancePushtoken:
     Type: String
-    Description: Push token to authenticate with the Master Appliance. Generate this from the Master's Config menu.
+    Description: Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
 
   # VSensor Config
 
@@ -408,9 +408,9 @@ Resources:
           - S3Region: !Ref QSS3BucketRegion
             S3Bucket: !Ref QSS3BucketName
       Parameters:
-        MasterHostname: !Ref VSensorMasterHostname
-        MasterPort: !Ref VSensorMasterPort
-        MasterPushtoken: !Ref VSensorMasterPushtoken
+        ApplianceHostname: !Ref VSensorApplianceHostname
+        AppliancePort: !Ref VSensorAppliancePort
+        AppliancePushtoken: !Ref VSensorAppliancePushtoken
         VsensorUpdatekey: !Ref VSensorUpdatekey
         Subnets:
           !Join

@@ -8,8 +8,8 @@ project:
     BastionKeyPairName: "key-pair-name"
     AvailabilityZones: $[taskcat_getaz_2]
     RemoteAccessCIDR: "127.0.0.1/32"
-    VSensorMasterHostname: "https://example.com"
-    VSensorMasterPushtoken: "FakePushToken"
+    VSensorApplianceHostname: "https://example.com"
+    VSensorAppliancePushtoken: "FakePushToken"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
     VSensorKeyPairName: "key-pair-name"
   template: ./templates/darktrace-vsensor-new-vpc.template.yaml

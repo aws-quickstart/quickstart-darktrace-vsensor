@@ -304,7 +304,7 @@ Resources:
                 commands:
                   - '#!/bin/bash'
                   - 'bash <(wget -O - https://packages.darktrace.com/install-focal) --updateKey {{VsensorUpdatekey}}'
-                  - 'wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+                  - 'wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb'
                   - 'sudo apt install ./amazon-cloudwatch-agent.deb'
                   # If any steps fails signals CFN of Failure
               CloudWatchOutputConfig:

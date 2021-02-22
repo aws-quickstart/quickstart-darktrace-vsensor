@@ -65,7 +65,7 @@ Mappings:
     eu-central-1:
       "UBUNTU": "ami-0502e817a62226e03"
     eu-west-1:
-      "UBUNTU": "ami-005383956f2e5fb96"
+      "UBUNTU": "ami-022e8cc8f0d3c52fd"
     eu-west-2:
       "UBUNTU": "ami-0ff4c8fb495a5a50d"
     eu-west-3:

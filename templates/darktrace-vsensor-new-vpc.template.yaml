@@ -1,7 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: This template creates a VPC infrastructure for a multi-AZ vSensor deployment on AWS. It deploys a VPC, bastion and scalable Darktrace vSensor cluster
   behind an ELB. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.
+
 Metadata:
+
   QuickStartDocumentation:
     EntrypointName: "Launch into a new VPC"
   OptionalParameters:
@@ -25,11 +27,11 @@ Metadata:
         - BastionKeyPairName
         - BastionAMIOS
     - Label:
-        default: Master Appliance Configuration
+        default: Appliance Configuration
       Parameters:
-        - VSensorMasterHostname
-        - VSensorMasterPort
-        - VSensorMasterPushtoken
+        - VSensorApplianceHostname
+        - VSensorAppliancePort
+        - VSensorAppliancePushtoken
     - Label:
         default: vSensor Configuration
       Parameters:
@@ -57,6 +59,7 @@ Metadata:
         - QSS3BucketName
         - QSS3BucketRegion
         - QSS3KeyPrefix
+
     ParameterLabels:
       # Network Config
 
@@ -84,14 +87,14 @@ Metadata:
       BastionAMIOS:
         default: Bastion AMI operating system
 
-      # Master Config
+      # Appliance Config
 
-      VSensorMasterHostname:
-        default: Master Appliance Hostname  
-      VSensorMasterPort:
-        default: Master Appliance Port
-      VSensorMasterPushtoken:
-        default: Master Appliance Push Token  
+      VSensorApplianceHostname:
+        default: Appliance Hostname  
+      VSensorAppliancePort:
+        default: Appliance Port
+      VSensorAppliancePushtoken:
+        default: Appliance Push Token  
 
       # vSensor Config
 
@@ -136,18 +139,18 @@ Metadata:
         default: Quick Start S3 Key Prefix
 
 Parameters:
-  # Master Config
+  # Appliance Config
 
-  VSensorMasterHostname:
+  VSensorApplianceHostname:
     Type: String
-    Description: Which Master Appliance should this vSensor connect to?
-  VSensorMasterPort:
+    Description: Which Appliance should this vSensor connect to?
+  VSensorAppliancePort:
     Type: Number
-    Description: Which port should the vSensor connect to the Master on?
+    Description: Which port should the vSensor connect to the Appliance on?
     Default: 443
-  VSensorMasterPushtoken:
+  VSensorAppliancePushtoken:
     Type: String
-    Description: Push token to authenticate with the Master Appliance. Generate this from the Master's Config menu.
+    Description: Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
 
   # VSensor Config
 
@@ -227,20 +230,15 @@ Parameters:
   # Bastion Config
 
   BastionInstanceType:
+    # Limit to Nitro instances, compatible with Traffic Mirroring.
     AllowedValues:
-    - t2.nano
-    - t2.micro
-    - t2.small
-    - t2.medium
-    - t2.large
-    - m3.large
-    - m3.xlarge
-    - m3.2xlarge
-    - m4.large
-    - m4.xlarge
-    - m4.2xlarge
-    - m4.4xlarge
-    Default: t2.micro
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+    Default: t3.micro
     Description: Amazon EC2 instance type for the bastion instances.
     Type: String
   BastionKeyPairName:
@@ -277,7 +275,7 @@ Parameters:
   VSensorLogGroupName:
     Type: String
     Description: Enter the name for the vSensor Log Group
-    Default: Darktrace-vSensor-logs
+    Default: Darktrace-vSensor-Logs
   VSensorLogGroupRetention:
     Type: Number
     AllowedValues:
@@ -332,6 +330,7 @@ Parameters:
     Type: String
 
 Resources:
+
   VPCStack:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
@@ -359,7 +358,9 @@ Resources:
           Ref: PublicSubnet2CIDR
         VPCCIDR:
           Ref: VPCCIDR
+
   BastionStack:
+
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
@@ -395,7 +396,9 @@ Resources:
           !GetAtt
             - VPCStack
             - Outputs.VPCID
+
   VSensorStack:
+    
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
@@ -405,9 +408,9 @@ Resources:
           - S3Region: !Ref QSS3BucketRegion
             S3Bucket: !Ref QSS3BucketName
       Parameters:
-        MasterHostname: !Ref VSensorMasterHostname
-        MasterPort: !Ref VSensorMasterPort
-        MasterPushtoken: !Ref VSensorMasterPushtoken
+        ApplianceHostname: !Ref VSensorApplianceHostname
+        AppliancePort: !Ref VSensorAppliancePort
+        AppliancePushtoken: !Ref VSensorAppliancePushtoken
         VsensorUpdatekey: !Ref VSensorUpdatekey
         Subnets:
           !Join
@@ -440,5 +443,9 @@ Resources:
         TrafficMirrorDestCIDR: !Ref VSensorTrafficMirrorDestCIDR
         VpcCIDRBlock: !Ref VPCCIDR
         SshCIDRBlock: !Ref VPCCIDR
-        KeyPairName:
-          Ref: VSensorKeyPairName
+        KeyPairName: !Ref VSensorKeyPairName
+        QSURL:
+          !Sub
+            - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}'
+            - S3Region: !Ref QSS3BucketRegion
+              S3Bucket: !Ref QSS3BucketName

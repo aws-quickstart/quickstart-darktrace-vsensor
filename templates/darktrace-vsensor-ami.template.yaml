@@ -1,0 +1,372 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "This template is used to build the Vsensor AMI."
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Darktrace vSensor AMI Generation Parameters
+        Parameters:
+          - TargetAMIName
+          - RootStackName
+          - VsensorUpdatekey
+          - LogGroupName
+          - KeyPairName
+    ParameterLabels:
+      TargetAMIName:
+        default: Name for newly created AMI
+      RootStackName:
+        default: Name of the calling stack, to set the custom AMI id once generated.
+      VsensorUpdatekey:
+        default: Update Key
+      LogGroupName:
+        default: CloudWatch Log Group
+      KeyPairName:
+        default: EC2 Key-pair Name
+
+Parameters:
+  TargetAMIName:
+    Type: String
+    Description: Name for newly created AMI
+  RootStackName:
+    Type: String
+    Description: Name of the calling stack, to set the custom AMI id once generated.
+  VsensorUpdatekey:
+    Type: String
+    Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
+    Default: 'XXXXXX:XXXX'
+  LogGroupName:
+    Type: String
+    Description: The CloudWatch log group that the AMI creation process should log to.
+    Default: Darktrace-vSensor-Quickstart
+  KeyPairName:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: Which EC2 Key-pair should be used to connect to the vSensor?
+
+# Ubuntu 20.04 Base AMIs
+Mappings:
+  RegionMap:
+    af-south-1:
+      "UBUNTU": "ami-0f072aafc9dfcb24f"
+    ap-east-1:
+      "UBUNTU": "ami-04864d873127e4b0a"
+    ap-south-1:
+      "UBUNTU": "ami-073c8c0760395aab8"
+    ap-northeast-1:
+      "UBUNTU": "ami-0e039c7d64008bd84"
+    ap-northeast-2:
+      "UBUNTU": "ami-067abcae434ee508b"
+    ap-southeast-1:
+      "UBUNTU": "ami-0c20b8b385217763f"
+    ap-southeast-2:
+      "UBUNTU": "ami-07fbdcfe29326c4fb"
+    ca-central-1:
+      "UBUNTU": "ami-02e44367276fe7adc"
+    eu-central-1:
+      "UBUNTU": "ami-0502e817a62226e03"
+    eu-west-1:
+      "UBUNTU": "ami-022e8cc8f0d3c52fd"
+    eu-west-2:
+      "UBUNTU": "ami-0ff4c8fb495a5a50d"
+    eu-west-3:
+      "UBUNTU": "ami-0d3f551818b21ed81"
+    eu-south-1:
+      "UBUNTU": "ami-0e0812e2467b24796"
+    eu-north-1:
+      "UBUNTU": "ami-09b44b5f46219ee86"
+    me-south-1:
+      "UBUNTU": "ami-07bf297712e054a41"
+    sa-east-1:
+      "UBUNTU": "ami-0e765cee959bcbfce"
+    us-east-1:
+      "UBUNTU": "ami-0885b1f6bd170450c"
+    us-east-2:
+      "UBUNTU": "ami-0996d3051b72b5b2c"
+    us-west-1:
+      "UBUNTU": "ami-00831fc7c1e3ddc60"
+    us-west-2:
+      "UBUNTU": "ami-07dd19a7900a1f049"
+
+Resources:
+
+# Create IAM Role for SSM Automation
+  AutomationRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Principal:
+              Service:
+                - ssm.amazonaws.com
+            Effect: Allow
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole'
+      Policies:
+        - PolicyName: EC2Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:DescribeInstanceStatus
+                Resource: '*'
+        - PolicyName: SSMAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: ['ssm:PutParameter', 'ssm:GetParameter']
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+        - PolicyName: CWAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*'
+        - PolicyName: CFNAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - cloudformation:SignalResource
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*/*'
+
+# IAM Role AMI Instance
+  AMIInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - ssm.amazonaws.com
+            Effect: Allow
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole'
+      Policies:
+        - PolicyName: SSMAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: ssm:StartAutomationExecution
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/*:VersionId}'
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:automation-definition/*'
+              - Effect: 'Allow'
+                Action: ssm:GetAutomationExecution
+                Resource: '*'
+        - PolicyName: CWAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*'
+        - PolicyName: CleanAMIEC2Instance
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:TerminateInstances'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:*'
+        - PolicyName: EC2MessagesAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - ec2messages:*
+                Resource: '*'
+        - PolicyName: SSMMessagesAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - ssmmessages:*
+                Resource:
+                  - '*'
+                  
+  AMIInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref AMIInstanceRole
+
+  BuildEC2Instance:
+    Type: AWS::EC2::Instance
+    CreationPolicy: # This is to stop CFN from showing the instance as completed. The success signal is sent from SSM
+      ResourceSignal:
+        Timeout: PT30M
+        Count: 1
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", UBUNTU]
+      KeyName: !Ref KeyPairName
+      IamInstanceProfile: !Ref AMIInstanceProfile
+      InstanceType: "t2.small"
+      Tags:
+        - Key: Name
+          Value: !Ref TargetAMIName
+      UserData: !Base64
+          Fn::Join:
+            - "\n"
+            - - "#!/bin/bash"
+              - "apt update"
+              - "apt install -y awscli"
+              - !Sub "aws ssm start-automation-execution --document-name ${SsmAMIBuild} --region ${AWS::Region}"
+
+  SsmAMIBuild:
+    Type: AWS::SSM::Document
+    Properties:
+      Name: "SsmAMIBuild"
+      DocumentType: Automation
+      Content:
+        schemaVersion: "0.3"
+        description: "Deploy and create AMI"
+        assumeRole: !GetAtt AutomationRole.Arn
+        parameters:
+          TargetAMIName:
+            default: !Ref TargetAMIName
+            description: "Name for the created AMI"
+            type: "String"
+          StackName:
+            default: !Sub "${AWS::StackName}"
+            description: "Stack Name Input for cfn resource signal"
+            type: "String"
+          RootStackName:
+            default: !Ref RootStackName
+            description: "Stack Name Input for cfn resource signal"
+            type: "String"
+          VsensorUpdatekey:
+            default: !Ref VsensorUpdatekey
+            description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
+            type: String
+          LogGroupName:
+            default: !Ref LogGroupName
+            description: The CloudWatch log group that the AMI creation process should log to.
+            type: String
+
+        mainSteps:
+          - name: "SCInstanceIds"
+            action: aws:executeAwsApi
+            onFailure: "step:signalfailure"
+            nextStep: "InstallVsensor"
+            inputs:
+              Service: ec2
+              Api: DescribeInstances
+              Filters:
+                - Name: "tag:Name"
+                  Values: ["{{TargetAMIName}}"]
+                - Name: "instance-state-name"
+                  Values: ["running"]
+            outputs:
+              - Name: InstanceId
+                Selector: "$.Reservations[0].Instances[0].InstanceId"
+                Type: "String"
+
+          - name: InstallVsensor
+            action: aws:runCommand
+            onFailure: "step:signalfailure"
+            nextStep: "CreateImage"
+            timeoutSeconds: 3600
+            inputs:
+              DocumentName: AWS-RunShellScript
+              InstanceIds:
+                - "{{SCInstanceIds.InstanceId}}"
+              Parameters:
+                commands:
+                  - '#!/bin/bash'
+                  - 'bash <(wget -O - https://packages.darktrace.com/install-focal) --updateKey {{VsensorUpdatekey}}'
+                  - 'wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb'
+                  - 'sudo apt install ./amazon-cloudwatch-agent.deb'
+                  # If any steps fails signals CFN of Failure
+              CloudWatchOutputConfig:
+                CloudWatchOutputEnabled: "true"
+                CloudWatchLogGroupName: "{{LogGroupName}}"
+
+          # Create the custom AMI
+          - name: CreateImage
+            action: aws:createImage
+            maxAttempts: 3
+            onFailure: "step:signalfailure"
+            nextStep: "writeCustomAmiId"
+            inputs:
+              InstanceId: "{{SCInstanceIds.InstanceId}}"
+              ImageName: "{{TargetAMIName}}"
+              NoReboot: true
+            outputs:
+              - Name: CustomAmiId
+                Selector: "ImageId"
+                Type: "String"
+
+          # Write the custom AMI ID to param store.
+          - name: "writeCustomAmiId"
+            action: "aws:executeAwsApi"
+            onFailure: "step:signalfailure"
+            nextStep: "terminateAMIEC2Instance"
+            inputs:
+              Service: ssm
+              Api: PutParameter
+              Name: "CustomAmiId"
+              Type: "String"
+              Overwrite: True
+              Value: "{{CreateImage.CustomAmiId}}"
+
+          # Terminate the AMI EC2 Instance
+          - name: "terminateAMIEC2Instance"
+            action: "aws:executeAwsApi"
+            onFailure: "step:signalfailure"
+            nextStep: "signalsuccess"
+            inputs:
+              Service: ec2
+              Api: TerminateInstances
+              InstanceIds: ["{{SCInstanceIds.InstanceId}}"]
+
+          # If all steps complete successfully signals CFN of Success
+          - name: "signalsuccess"
+            action: "aws:executeAwsApi"
+            isEnd: True
+            inputs:
+              Service: cloudformation
+              Api: SignalResource
+              LogicalResourceId: "BuildEC2Instance"
+              StackName: "{{StackName}}"
+              Status: SUCCESS
+              UniqueId: "{{SCInstanceIds.InstanceId}}"
+
+          - name: "signalfailure"
+            action: "aws:executeAwsApi"
+            inputs:
+              Service: cloudformation
+              Api: SignalResource
+              LogicalResourceId: "BuildEC2Instance"
+              StackName: "{{StackName}}"
+              Status: FAILURE
+              UniqueId: "{{SCInstanceIds.InstanceId}}"

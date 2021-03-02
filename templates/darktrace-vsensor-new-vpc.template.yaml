@@ -323,7 +323,7 @@ Parameters:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
       uppercase letters, hyphens (-), and forward slash (/).
-    Default: quickstart-examples/
+    Default: quickstart-darktrace-vsensor/
     Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
@@ -337,7 +337,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}/submodules/quickstart-aws-vpc/templates/aws-vpc.template'
+          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template'
           - S3Region: !Ref QSS3BucketRegion
             S3Bucket: !Ref QSS3BucketName
       Parameters:
@@ -366,7 +366,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}/submodules/quickstart-linux-bastion/templates/linux-bastion.template'
+          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template'
           - S3Region: !Ref QSS3BucketRegion
             S3Bucket: !Ref QSS3BucketName
       Parameters:
@@ -374,7 +374,6 @@ Resources:
           Ref: QSS3BucketName
         QSS3BucketRegion: 
           Ref: QSS3BucketRegion
-        QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}/submodules/quickstart-linux-bastion/'
         BastionHostName: !Sub 'DT-vSensorBastion-${AWS::StackName}'
         BastionAMIOS:
           Ref: BastionAMIOS

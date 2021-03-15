@@ -11,7 +11,7 @@ project:
     VSensorApplianceHostname: "https://example.com"
     VSensorAppliancePushtoken: "FakePushToken"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
-    VSensorKeyPairName: "key-pair-name"
+    VSensorKeyPairName: $[taskcat_getkeypair]
   template: ./templates/darktrace-vsensor-new-vpc.template.yaml
 tests:
   vsensor:

@@ -232,7 +232,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - '${QSURL}/templates/darktrace-vsensor-ami.template.yaml'
+          - '${QSURL}templates/darktrace-vsensor-ami.template.yaml'
           - QSURL: !Ref QSURL
       Parameters:
         TargetAMIName: !Sub "AMI-${AWS::StackName}"

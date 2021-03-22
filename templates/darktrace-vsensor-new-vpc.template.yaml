@@ -337,7 +337,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template'
+          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template.yaml'
           - S3Region: !Ref QSS3BucketRegion
             S3Bucket: !Ref QSS3BucketName
       Parameters:
@@ -370,10 +370,6 @@ Resources:
           - S3Region: !Ref QSS3BucketRegion
             S3Bucket: !Ref QSS3BucketName
       Parameters:
-        QSS3BucketName: 
-          Ref: QSS3BucketName
-        QSS3BucketRegion: 
-          Ref: QSS3BucketRegion
         BastionHostName: !Sub 'DT-vSensorBastion-${AWS::StackName}'
         BastionAMIOS:
           Ref: BastionAMIOS
@@ -403,7 +399,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}/templates/darktrace-vsensor-main.template.yaml'
+          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-main.template.yaml'
           - S3Region: !Ref QSS3BucketRegion
             S3Bucket: !Ref QSS3BucketName
       Parameters:

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: This template deploys an auto-scaling vSensor cluster for monitoring existing VPC subnets. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.
+Description: This template deploys an auto-scaling vSensor cluster for monitoring existing VPC subnets. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.(qs-1rmjte85a)
 
 Metadata:
   QuickStartDocumentation:
@@ -232,7 +232,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - '${QSURL}/templates/darktrace-vsensor-ami.template.yaml'
+          - '${QSURL}templates/darktrace-vsensor-ami.template.yaml'
           - QSURL: !Ref QSURL
       Parameters:
         TargetAMIName: !Sub "AMI-${AWS::StackName}"

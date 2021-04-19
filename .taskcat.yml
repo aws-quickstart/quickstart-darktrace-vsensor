@@ -5,13 +5,13 @@ project:
     QSS3BucketName: $[taskcat_autobucket]
     QSS3BucketRegion: $[taskcat_current_region]
     QSS3KeyPrefix: quickstart-darktrace-vsensor/
-    BastionKeyPairName: "key-pair-name"
+    BastionKeyPairName: $[taskcat_getkeypair]
     AvailabilityZones: $[taskcat_getaz_2]
     RemoteAccessCIDR: "127.0.0.1/32"
     VSensorApplianceHostname: "https://example.com"
     VSensorAppliancePushtoken: "FakePushToken"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
-    VSensorKeyPairName: "key-pair-name"
+    VSensorKeyPairName: $[taskcat_getkeypair]
   template: ./templates/darktrace-vsensor-new-vpc.template.yaml
 tests:
   vsensor:

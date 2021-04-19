@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "This template is used to build the Vsensor AMI."
+Description: This template is used to build the Vsensor AMI.(qs-1rmjte85h)
 
 Metadata:
   AWS::CloudFormation::Interface:

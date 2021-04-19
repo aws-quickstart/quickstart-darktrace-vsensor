@@ -6,8 +6,6 @@ Metadata:
 
   QuickStartDocumentation:
     EntrypointName: "Launch into a new VPC"
-  OptionalParameters:
-    - VSensorInstanceSecurityGroups
   AWS::CloudFormation::Interface:
     ParameterGroups:
     - Label:
@@ -41,6 +39,7 @@ Metadata:
         - VSensorDesiredCapacityASG
         - VSensorMinSizeASG
         - VSensorMaxSizeASG
+        - VSensorOsSensorHMAC
     - Label:
         default: Traffic Mirroring Configuration
       Parameters:
@@ -59,6 +58,7 @@ Metadata:
         - QSS3BucketName
         - QSS3BucketRegion
         - QSS3KeyPrefix
+        - ShortID
 
     ParameterLabels:
       # Network Config
@@ -110,6 +110,8 @@ Metadata:
         default: Minimum vSensor instance capacity
       VSensorMaxSizeASG:
         default: Maximum vSensor instance capacity
+      VSensorOsSensorHMAC:
+        default: osSensor HMAC Token
 
       # Logs and PCAPs Config
 
@@ -137,6 +139,8 @@ Metadata:
         default: Quick Start S3 bucket region
       QSS3KeyPrefix:
         default: Quick Start S3 Key Prefix
+      ShortID:
+        default: Quick Start Unique Run ID (12 chars or less)
 
 Parameters:
   # Appliance Config
@@ -182,6 +186,10 @@ Parameters:
     Type: Number
     Description: Maximum number of vSensor instances within the auto-scaling group.
     Default: 5
+  VSensorOsSensorHMAC:
+    Type: String
+    Description: HMAC Token to authenticate osSensors with the vSensor.
+    Default: ""
 
   # Network Config
 
@@ -328,6 +336,12 @@ Parameters:
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
     Type: String
+  ShortID:
+    AllowedPattern: ^[0-9a-z-]{1,12}$
+    ConstraintDescription: Unique ID prefix can include up to 12 characters, including numbers, lowercase letters, hyphens (-).
+    Description: "QuickStart short unique ID, used to identify resources from other installtions of this Quickstart."
+    Default: "dt-qs-0"
+    Type: String
 
 Resources:
 
@@ -358,6 +372,12 @@ Resources:
           Ref: PublicSubnet2CIDR
         VPCCIDR:
           Ref: VPCCIDR
+      Tags:
+        - Key: "Name"
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-VPC-Stack"
+              - ShortID: !Ref ShortID
 
   BastionStack:
 
@@ -391,6 +411,12 @@ Resources:
           !GetAtt
             - VPCStack
             - Outputs.VPCID
+      Tags:
+        - Key: "Name"
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-Bastion-Stack"
+              - ShortID: !Ref ShortID
 
   VSensorStack:
     
@@ -407,6 +433,7 @@ Resources:
         AppliancePort: !Ref VSensorAppliancePort
         AppliancePushtoken: !Ref VSensorAppliancePushtoken
         VsensorUpdatekey: !Ref VSensorUpdatekey
+        osSensorHMAC: !Ref VSensorOsSensorHMAC
         Subnets:
           !Join
             - ","
@@ -431,7 +458,6 @@ Resources:
         DesiredCapacityASG: !Ref VSensorDesiredCapacityASG
         MinSizeASG: !Ref VSensorMinSizeASG
         MaxSizeASG: !Ref VSensorMaxSizeASG
-        LogGroupName: !Ref VSensorLogGroupName
         LogGroupRetention: !Ref VSensorLogGroupRetention
         TrafficMirrorRuleNumber: !Ref VSensorTrafficMirrorRuleNumber
         TrafficMirrorSourceCIDR: !Ref VSensorTrafficMirrorSourceCIDR
@@ -444,3 +470,10 @@ Resources:
             - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}'
             - S3Region: !Ref QSS3BucketRegion
               S3Bucket: !Ref QSS3BucketName
+        ShortID: !Ref ShortID
+      Tags:
+        - Key: "Name"
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-Stack"
+              - ShortID: !Ref ShortID

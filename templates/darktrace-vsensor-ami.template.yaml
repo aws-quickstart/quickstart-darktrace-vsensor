@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: This template is used to build the Vsensor AMI.(qs-1rmjte85h)
+Description: This template is used to build the vSensor AMI.(qs-1rmjte85h)
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -7,16 +7,16 @@ Metadata:
       - Label:
           default: Darktrace vSensor AMI Generation Parameters
         Parameters:
-          - TargetAMIName
-          - RootStackName
+          - TargetAmiSSMName
+          - ShortID
           - VsensorUpdatekey
           - LogGroupName
           - KeyPairName
     ParameterLabels:
-      TargetAMIName:
+      TargetAmiSSMName:
         default: Name for newly created AMI
-      RootStackName:
-        default: Name of the calling stack, to set the custom AMI id once generated.
+      ShortID:
+        default: Used to distinguish Amazon resources by name to allow multiple concurrent installations.
       VsensorUpdatekey:
         default: Update Key
       LogGroupName:
@@ -25,12 +25,12 @@ Metadata:
         default: EC2 Key-pair Name
 
 Parameters:
-  TargetAMIName:
+  TargetAmiSSMName:
     Type: String
     Description: Name for newly created AMI
-  RootStackName:
+  ShortID:
     Type: String
-    Description: Name of the calling stack, to set the custom AMI id once generated.
+    Description: Used to distinguish Amazon resources by name to allow multiple concurrent installations.
   VsensorUpdatekey:
     Type: String
     Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
@@ -119,7 +119,10 @@ Resources:
             Version: '2012-10-17'
             Statement:
               - Effect: 'Allow'
-                Action: ['ssm:PutParameter', 'ssm:GetParameter']
+                Action:
+                  - 'ssm:PutParameter'
+                  - 'ssm:GetParameter'
+                  - 'ssm:UpdateInstanceInformation'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
         - PolicyName: CWAccess
@@ -144,6 +147,10 @@ Resources:
                   - cloudformation:SignalResource
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*/*'
+      RoleName:
+        !Sub
+        - "${ShortID}-vSensor-AMI-SSM-Automation-IAM-Role"
+        - ShortID: !Ref ShortID
 
 # IAM Role AMI Instance
   AMIInstanceRole:
@@ -213,12 +220,20 @@ Resources:
                   - ssmmessages:*
                 Resource:
                   - '*'
-                  
+      RoleName:
+        !Sub
+        - "${ShortID}-vSensor-AMI-IAM-Role"
+        - ShortID: !Ref ShortID
+
   AMIInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
         - !Ref AMIInstanceRole
+      InstanceProfileName:
+        !Sub
+        - "${ShortID}-vSensor-AMI-IAM-InstanceProfile"
+        - ShortID: !Ref ShortID
 
   BuildEC2Instance:
     Type: AWS::EC2::Instance
@@ -230,10 +245,10 @@ Resources:
       ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", UBUNTU]
       KeyName: !Ref KeyPairName
       IamInstanceProfile: !Ref AMIInstanceProfile
-      InstanceType: "t2.small"
+      InstanceType: "t3.medium"
       Tags:
         - Key: Name
-          Value: !Ref TargetAMIName
+          Value: !Ref TargetAmiSSMName
       UserData: !Base64
           Fn::Join:
             - "\n"
@@ -245,24 +260,27 @@ Resources:
   SsmAMIBuild:
     Type: AWS::SSM::Document
     Properties:
-      Name: "SsmAMIBuild"
+      Name:
+        !Sub
+          - "${ShortID}-vSensor-AMI-SSM"
+          - ShortID: !Ref ShortID
       DocumentType: Automation
       Content:
         schemaVersion: "0.3"
         description: "Deploy and create AMI"
         assumeRole: !GetAtt AutomationRole.Arn
         parameters:
-          TargetAMIName:
-            default: !Ref TargetAMIName
-            description: "Name for the created AMI"
+          TargetAmiSSMName:
+            default: !Ref TargetAmiSSMName
+            description: "SSM Parameter Name for the created AMI to pass to vSensor ASG."
             type: "String"
           StackName:
             default: !Sub "${AWS::StackName}"
             description: "Stack Name Input for cfn resource signal"
             type: "String"
-          RootStackName:
-            default: !Ref RootStackName
-            description: "Stack Name Input for cfn resource signal"
+          ShortID:
+            default: !Ref ShortID
+            description: "Used to set AMI name unique for this stack."
             type: "String"
           VsensorUpdatekey:
             default: !Ref VsensorUpdatekey
@@ -283,7 +301,7 @@ Resources:
               Api: DescribeInstances
               Filters:
                 - Name: "tag:Name"
-                  Values: ["{{TargetAMIName}}"]
+                  Values: ["{{ShortID}}-vSensor-AMI"]
                 - Name: "instance-state-name"
                   Values: ["running"]
             outputs:
@@ -303,9 +321,10 @@ Resources:
               Parameters:
                 commands:
                   - '#!/bin/bash'
-                  - 'bash <(wget -O - https://packages.darktrace.com/install-focal) --updateKey {{VsensorUpdatekey}}'
+                  - 'bash <(wget -O - https://packages.darktrace.com/install) --updateKey {{VsensorUpdatekey}}'
                   - 'wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb'
-                  - 'sudo apt install ./amazon-cloudwatch-agent.deb'
+                  - 'sudo dpkg -i -E ./amazon-cloudwatch-agent.deb'
+                  - 'systemctl enable amazon-cloudwatch-agent'
                   # If any steps fails signals CFN of Failure
               CloudWatchOutputConfig:
                 CloudWatchOutputEnabled: "true"
@@ -316,28 +335,28 @@ Resources:
             action: aws:createImage
             maxAttempts: 3
             onFailure: "step:signalfailure"
-            nextStep: "writeCustomAmiId"
+            nextStep: "writevSensorAmiId"
             inputs:
               InstanceId: "{{SCInstanceIds.InstanceId}}"
-              ImageName: "{{TargetAMIName}}"
+              ImageName: "{{ShortID}}-vSensor-AMI"
               NoReboot: true
             outputs:
-              - Name: CustomAmiId
+              - Name: "vSensorAmiId"
                 Selector: "ImageId"
                 Type: "String"
 
           # Write the custom AMI ID to param store.
-          - name: "writeCustomAmiId"
+          - name: "writevSensorAmiId"
             action: "aws:executeAwsApi"
             onFailure: "step:signalfailure"
             nextStep: "terminateAMIEC2Instance"
             inputs:
               Service: ssm
               Api: PutParameter
-              Name: "CustomAmiId"
+              Name: !Ref TargetAmiSSMName
               Type: "String"
               Overwrite: True
-              Value: "{{CreateImage.CustomAmiId}}"
+              Value: "{{CreateImage.vSensorAmiId}}"
 
           # Terminate the AMI EC2 Instance
           - name: "terminateAMIEC2Instance"

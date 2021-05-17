@@ -4,6 +4,7 @@ Description: This template deploys an auto-scaling vSensor cluster for monitorin
 Metadata:
   QuickStartDocumentation:
     EntrypointName: "Launch into an existing VPC"
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -22,6 +23,7 @@ Metadata:
           - DesiredCapacityASG
           - MinSizeASG
           - MaxSizeASG
+          - osSensorHMAC
       - Label:
           default: Networking Configuration
         Parameters:
@@ -38,13 +40,13 @@ Metadata:
       - Label:
           default: Logs & PCAPS Configuration
         Parameters:
-          - LogGroupName
           - LogGroupRetention
           - LifecycleS3BucketDays
       - Label:
           default: "Quickstart Config"
         Parameters:
           - QSURL
+          - ShortID
 
 
     ParameterLabels:
@@ -54,7 +56,7 @@ Metadata:
       AppliancePort:
         default: Appliance Port
       AppliancePushtoken:
-        default: Appliance Push Token  
+        default: Appliance Push Token
       # vSensor Config
       InstanceType:
         default: EC2 Instance Type
@@ -70,6 +72,8 @@ Metadata:
         default: Minimum vSensor instance capacity
       MaxSizeASG:
         default: Maximum vSensor instance capacity
+      osSensorHMAC:
+        default: osSensor HMAC Token
       # Networking Config
       DeploymentVPC:
         default: Deployment VPC
@@ -87,8 +91,6 @@ Metadata:
       TrafficMirrorDestCIDR:
         default: Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
       # Logs and PCAPs Config
-      LogGroupName:
-        default: CloudWatch Log Group
       LogGroupRetention:
         default: CloudWatch Log Retention (Days)
       LifecycleS3BucketDays:
@@ -96,6 +98,8 @@ Metadata:
       # Quickstart Config
       QSURL:
         default: "Quickstart bucket URL"
+      ShortID:
+        default: "Quickstart Short Unique ID"
 
 Parameters:
   # Appliance Config
@@ -144,6 +148,10 @@ Parameters:
     Type: Number
     Description: Maximum number of vSensor instances within the auto-scaling group.
     Default: 5
+  osSensorHMAC:
+    Type: String
+    Description: HMAC Token to authenticate osSensors with the vSensor.
+    Default: ""
 
   # Networking Config
 
@@ -181,10 +189,6 @@ Parameters:
   
   # Logs & PCAPs Config
 
-  LogGroupName:
-    Type: String
-    Description: Enter the name for the vSensor Log Group
-    Default: Darktrace-vSensor-Logs
   LogGroupRetention:
     Type: Number
     AllowedValues:
@@ -215,13 +219,90 @@ Parameters:
   QSURL:
     Type: String
     Description: "QuickStart Bucket URL"
+  ShortID:
+    AllowedPattern: ^[0-9a-z-]{0,12}$
+    ConstraintDescription: Unique ID prefix can include up to 12 characters, including numbers, lowercase letters, hyphens (-).
+    Description: "QuickStart short unique ID, used to identify resources from other installtions of this Quickstart. If left empty, a random string is generated."
+    Default: ""
+    Type: String
 
 Resources:
 
-  CustomAmiName:
+  ## Generate a short ID if the user does not define one.
+  # This involves running a Lambda function.
+  # From https://www.itonaut.com/2018/01/03/generate-passwords-in-aws-cloudformation-template/
+  # Modified to take a user submitted ShortID and return this if provided, else generate the random value.
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        -
+          PolicyName: allowLambdaLogging
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:*"
+                Resource: "*"
+
+  RandomStringLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+        Code:
+          ZipFile: >
+            const response = require("cfn-response"); const randomString = (length, chars) => {
+                var result = '';
+                for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+                return result;
+            }; exports.handler = (event, context) =>{
+              let str = "";
+              let length = 12;
+              let shortID = "";
+              if ("ResourceProperties" in event) {
+                if ("ShortID" in event['ResourceProperties'] && event['ResourceProperties']['ShortID'] != "") {
+                  str = event['ResourceProperties']['ShortID'];
+                }
+                else if ("Length" in event['ResourceProperties']) {
+                  length = Number(event['ResourceProperties']['Length']);
+                }
+              }
+              if (str == "") {
+                str = randomString(length, '0123456789abcdefghijklmnopqrstuvwxyz');
+              }
+              const responseData = {IDString: str};
+              response.send(event, context, response.SUCCESS, responseData);
+            };
+        Handler: index.handler
+        Runtime: nodejs12.x
+        Role: !GetAtt LambdaExecutionRole.Arn
+        MemorySize: 128
+        Timeout: 20
+
+  ShortIDRand:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      Length: 12
+      ShortID: !Ref ShortID 
+      ServiceToken: !GetAtt RandomStringLambdaFunction.Arn
+
+  vSensorAmiName:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: "CustomAmiId"
+      Name:
+        !Sub
+          - "${ShortID}-vSensor-AMI"
+          - ShortID: !GetAtt ShortIDRand.IDString
       Description: "The AMI ID of the autogenerated Darktrace vSensor software AMI image."
       Type: String
       Value: "NOT_YET_SET"
@@ -235,17 +316,32 @@ Resources:
           - '${QSURL}templates/darktrace-vsensor-ami.template.yaml'
           - QSURL: !Ref QSURL
       Parameters:
-        TargetAMIName: !Sub "AMI-${AWS::StackName}"
-        RootStackName: !Sub "${AWS::StackName}"
+        TargetAmiSSMName:
+          !Sub
+            - "${ShortID}-vSensor-AMI"
+            - ShortID: !GetAtt ShortIDRand.IDString
+        ShortID: !GetAtt ShortIDRand.IDString
         VsensorUpdatekey: !Ref VsensorUpdatekey
-        LogGroupName: !Ref LogGroupName
+        LogGroupName: 
+          !Sub
+            - "${ShortID}-vSensor-Logs"
+            - ShortID: !GetAtt ShortIDRand.IDString
         KeyPairName: !Ref KeyPairName
+      Tags:
+        - Key: "Name"
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-CreateAMI-Stack"
+              - ShortID: !GetAtt ShortIDRand.IDString
 
   SecurityGroupvSensor:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: "Security group for ASG vSensor"
-      GroupName: Darktrace-vSensor
+      GroupName:
+        !Sub
+          - "${ShortID}-vSensor-SG"
+          - ShortID: !GetAtt ShortIDRand.IDString
       VpcId: !Ref DeploymentVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -271,7 +367,10 @@ Resources:
       AlarmActions:
         - !Ref ScaleDownPolicy
       AlarmDescription: Alarm to decide when vSensor should scale down
-      AlarmName: vSensorScalingDownMEM
+      AlarmName:
+        !Sub
+          - "${ShortID}-vSensorScalingDownMEM"
+          - ShortID: !GetAtt ShortIDRand.IDString
       ComparisonOperator: LessThanOrEqualToThreshold
       EvaluationPeriods: 5
       MetricName: "mem_used_percent"
@@ -289,7 +388,10 @@ Resources:
       AlarmActions:
         - !Ref ScaleUpPolicy
       AlarmDescription: Alarm to decide when vSensor should scale up
-      AlarmName: vSensorScalingUpCPU
+      AlarmName:
+        !Sub
+          - "${ShortID}-vSensorScalingUpCPU"
+          - ShortID: !GetAtt ShortIDRand.IDString
       ComparisonOperator: GreaterThanOrEqualToThreshold
       EvaluationPeriods: 5
       MetricName: "cpu_usage_active"
@@ -307,7 +409,10 @@ Resources:
       AlarmActions:
         - !Ref ScaleUpPolicy
       AlarmDescription: Alarm to decide when vSensor should scale up
-      AlarmName: vSensorScalingUpMEM
+      AlarmName:
+        !Sub
+          - "${ShortID}-vSensorScalingUpMEM"
+          - ShortID: !GetAtt ShortIDRand.IDString
       ComparisonOperator: GreaterThanOrEqualToThreshold
       EvaluationPeriods: 5
       MetricName: "mem_used_percent"
@@ -354,13 +459,25 @@ Resources:
       LaunchTemplateData:
         UserData: !Base64 
           'Fn::Sub': |
-            #!/bin/bash
+            #!/bin/bash +xe
+            touch /etc/darktrace/.userdata-started
+            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            # See https://youtu.be/unMiTRw8JVE for an example on how to review this console output.
+            echo "Starting userdata"
+            echo "Setting configuration"
             #set updatekey, upgrade and enable daily updates
             set_updatekey.sh ${VsensorUpdatekey}
-            repo-control.sh -nevua ${VsensorUpdatekey}
             sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
             set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
+            sleep 5
+            if [ -n "${osSensorHMAC}" ]; then
+              set_ossensor_hmac.sh ${osSensorHMAC}
+              sleep 5
+            fi
             set_pcap_s3_bucket.sh ${PCAPS}
+            sleep 5
+            touch /etc/darktrace/.userdata-config-complete
+            echo "Completed vSensor configuration"
             cat >CW_AGENT.conf <<'EOF'
             {
               "agent": {
@@ -430,9 +547,6 @@ Resources:
                 },
                 "aggregation_dimensions": [["AutoScalingGroupName"], ["InstanceId", "InstanceType"]],
                 "metrics_collected": {
-                  "collectd": {
-                    "metrics_aggregation_interval": 60
-                  },
                   "cpu": {
                     "measurement": [
                       "cpu_usage_active",
@@ -502,7 +616,16 @@ Resources:
               }
             }
             EOF
+            cp ./CW_AGENT.conf /etc/darktrace/
             sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:./CW_AGENT.conf -s
+            sudo systemctl start amazon-cloudwatch-agent
+            touch /etc/darktrace/.userdata-cw-complete
+            echo "Cloudwatch configuration complete."
+            service confconsole restart # To update AWS screenshot with current config.
+            repo-control.sh -nevua ${VsensorUpdatekey}
+            touch /etc/darktrace/.userdata-completed
+            echo "Update configuration checks complete"
+            echo "Userdata script complete."
         KeyName: !Ref KeyPairName
         InstanceType: !Ref InstanceType
         BlockDeviceMappings:
@@ -515,16 +638,27 @@ Resources:
               - "${customerSecurityGroups},${SecurityGroupvSensor}"
               - customerSecurityGroups: !Join [",", !Ref "InstanceSecurityGroups"]
         IamInstanceProfile:
-          Arn: !GetAtt PcapIamInstanceProfile.Arn
-        ImageId: !GetAtt CustomAmiName.Value
-      LaunchTemplateName: !Sub '${AWS::StackName}-launch-template'
+          Arn: !GetAtt vSensorIamInstanceProfile.Arn
+        ImageId: !GetAtt vSensorAmiName.Value
+        TagSpecifications:
+          - ResourceType: 'instance'
+            Tags:
+              - Key: 'vSensorProbe'
+                Value: 'YES'
+      LaunchTemplateName:
+        !Sub
+          - "${ShortID}-vSensor-Launch-Template"
+          - ShortID: !GetAtt ShortIDRand.IDString
 
   vSensorLogGroup:
     Type: 'AWS::Logs::LogGroup'
     #DeletionPolicy: Retain
     #UpdateReplacePolicy: Retain  
     Properties:
-      LogGroupName: !Ref LogGroupName
+      LogGroupName:
+        !Sub
+          - "${ShortID}-vSensor-Logs"
+          - ShortID: !GetAtt ShortIDRand.IDString
       RetentionInDays: !Ref LogGroupRetention
 
   TrafficMirrorTarget:
@@ -534,7 +668,10 @@ Resources:
       Description: Traffic mirror target associated with a network load balancer
       Tags:
         - Key: "Name"
-          Value: "Darktrace vSensor Traffic Mirror Target"
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-Traffic-Mirror-Target"
+              - ShortID: !GetAtt ShortIDRand.IDString
 
   TrafficMirrorFilter:
     Type: 'AWS::EC2::TrafficMirrorFilter'
@@ -542,7 +679,10 @@ Resources:
       Description: Mirror filter for autoscaling vsensor, allow all from given CIDR range
       Tags:
         - Key: "Name"
-          Value: "Darktrace vSensor Traffic filter"
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-Traffic-Filter"
+              - ShortID: !GetAtt ShortIDRand.IDString
 
   TrafficMirrorFilterRuleIngress:
     Type: AWS::EC2::TrafficMirrorFilterRule
@@ -569,7 +709,10 @@ Resources:
   TargetGroupUDP4789:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties: 
-      Name: 'ASG-vsensor-UDP-4789'
+      Name: 
+        !Sub
+          - "${ShortID}-vSensor-ASG-UDP4789"
+          - ShortID: !GetAtt ShortIDRand.IDString
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /
@@ -583,7 +726,10 @@ Resources:
   TargetGroupTCP443:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties: 
-      Name: 'ASG-vsensor-TCP-443'
+      Name:
+        !Sub
+          - "${ShortID}-vSensor-ASG-TCP443"
+          - ShortID: !GetAtt ShortIDRand.IDString
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /
@@ -614,7 +760,11 @@ Resources:
       Tags:  
         - Key: Name
           PropagateAtLaunch: True
-          Value: !Sub 'DT-vSensor-${AWS::StackName}'
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-ASG"
+              - ShortID: !GetAtt ShortIDRand.IDString
+
   PCAPS:
     Type: 'AWS::S3::Bucket'
     Properties:
@@ -628,10 +778,18 @@ Resources:
           - Id: !Sub 'DeleteAfter${LifecycleS3BucketDays}Days'
             ExpirationInDays: !Ref LifecycleS3BucketDays
             Status: Enabled
+      BucketName:
+        !Sub
+          - "${ShortID}-vsensor-pcaps"
+          - ShortID: !GetAtt ShortIDRand.IDString
 
   LoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
+      Name:
+        !Sub
+          - "${ShortID}-vSensor-Balancer"
+          - ShortID: !GetAtt ShortIDRand.IDString
       LoadBalancerAttributes:
         - Key: load_balancing.cross_zone.enabled
           Value: 'true'
@@ -659,14 +817,23 @@ Resources:
       Port: 443
       Protocol: 'TCP'
 
-  PcapIamInstanceProfile:
+  vSensorIamInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
       Roles:
-        - Ref: S3PCAPIamRole
-  S3PCAPIamRole:
+        - Ref: vSensorIamRole
+      InstanceProfileName:
+        !Sub
+          - "${ShortID}-vSensor-IAM-Instance-Profile"
+          - ShortID: !GetAtt ShortIDRand.IDString
+
+  vSensorIamRole:
     Type: 'AWS::IAM::Role'
     Properties:
+      RoleName:
+        !Sub
+          - "${ShortID}-vSensor-IAM-Role"
+          - ShortID: !GetAtt ShortIDRand.IDString
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -687,11 +854,19 @@ Resources:
                   - 'cloudwatch:GetMetricStatistics'
                   - 'ec2:DescribeVolumes'
                   - 'ec2:DescribeTags'
+                  - 'ec2Messages:GetMessages'
+                  - 'ssm:UpdateInstanceInformation'
+                  - 'ssm:ListAssociations'
+                  - 'ssm:ListInstanceAssociations'
                   - 'logs:PutLogEvents'
                   - 'logs:DescribeLogStreams'
                   - 'logs:DescribeLogGroups'
                   - 'logs:CreateLogStream'
                   - 'logs:CreateLogGroup'
+                  - "ssmmessages:CreateControlChannel"
+                  - "ssmmessages:CreateDataChannel"
+                  - "ssmmessages:OpenControlChannel"
+                  - "ssmmessages:OpenDataChannel"
                 Resource:
                   - '*'
               - Effect: Allow
@@ -727,3 +902,11 @@ Outputs:
   BucketName:
     Description: Name of the PCAP S3 bucket.
     Value: !Ref PCAPS
+
+  TrafficMirrorFilterId:
+    Description: ID of the traffic mirror filter generated.
+    Value: !Ref TrafficMirrorFilter
+
+  TrafficMirrorTargetId:
+    Description: ID of the traffic mirror target generated.
+    Value: !Ref TrafficMirrorTarget

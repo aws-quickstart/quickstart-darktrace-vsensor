@@ -16,7 +16,8 @@ project:
 tests:
   vsensor:
     regions:
-      - eu-west-1
+      # - eu-west-1
+      - us-east-1
   # vsensor-all-regions:
   #   regions:
   #     - ap-south-1

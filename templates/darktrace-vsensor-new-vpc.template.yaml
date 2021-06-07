@@ -337,6 +337,11 @@ Parameters:
     Default: ""
     Type: String
 
+Conditions:
+  UsingDefaultBucket: !Equals
+    - !Ref QSS3BucketName
+    -  "aws-quickstart"
+
 Resources:
 
   ## Generate a short ID if the user does not define one.
@@ -413,9 +418,15 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template.yaml'
-          - S3Region: !Ref QSS3BucketRegion
-            S3Bucket: !Ref QSS3BucketName
+          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template.yaml'
+          - S3Bucket: !If
+              - UsingDefaultBucket
+              - !Sub "aws-quickstart-${AWS::Region}"
+              - !Ref "QSS3BucketName"
+            S3Region: !If
+              - UsingDefaultBucket
+              - !Ref "AWS::Region"
+              - !Ref "QSS3BucketRegion"
       Parameters:
         AvailabilityZones:
           !Join
@@ -446,9 +457,15 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template'
-          - S3Region: !Ref QSS3BucketRegion
-            S3Bucket: !Ref QSS3BucketName
+          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template'
+          - S3Bucket: !If
+              - UsingDefaultBucket
+              - !Sub "aws-quickstart-${AWS::Region}"
+              - !Ref "QSS3BucketName"
+            S3Region: !If
+              - UsingDefaultBucket
+              - !Ref "AWS::Region"
+              - !Ref "QSS3BucketRegion"
       Parameters:
         BastionHostName: !Sub 'DT-vSensorBastion-${AWS::StackName}'
         BastionAMIOS:
@@ -485,9 +502,15 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-main.template.yaml'
-          - S3Region: !Ref QSS3BucketRegion
-            S3Bucket: !Ref QSS3BucketName
+          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-main.template.yaml'
+          - S3Bucket: !If
+              - UsingDefaultBucket
+              - !Sub "aws-quickstart-${AWS::Region}"
+              - !Ref "QSS3BucketName"
+            S3Region: !If
+              - UsingDefaultBucket
+              - !Ref "AWS::Region"
+              - !Ref "QSS3BucketRegion"
       Parameters:
         ApplianceHostname: !Ref VSensorApplianceHostname
         AppliancePort: !Ref VSensorAppliancePort
@@ -533,9 +556,15 @@ Resources:
         KeyPairName: !Ref VSensorKeyPairName
         QSURL:
           !Sub
-            - 'https://${S3Bucket}.s3-${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}'
-            - S3Region: !Ref QSS3BucketRegion
-              S3Bucket: !Ref QSS3BucketName
+            - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}'
+            - S3Bucket: !If
+                - UsingDefaultBucket
+                - !Sub "aws-quickstart-${AWS::Region}"
+                - !Ref "QSS3BucketName"
+              S3Region: !If
+                - UsingDefaultBucket
+                - !Ref "AWS::Region"
+                - !Ref "QSS3BucketRegion"
         ShortID: !GetAtt ShortIDRand.IDString
       Tags:
         - Key: "Name"

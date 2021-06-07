@@ -1,10 +1,11 @@
 project:
   name: quickstart-darktrace-vsensor
   owner: quickstart-eng@amazon.com
+  s3_regional_buckets: true
   parameters:
     QSS3BucketName: $[taskcat_autobucket]
     QSS3BucketRegion: $[taskcat_current_region]
-    QSS3KeyPrefix: quickstart-darktrace-vsensor/
+    QSS3KeyPrefix: "quickstart-darktrace-vsensor/"
     BastionKeyPairName: $[taskcat_getkeypair]
     AvailabilityZones: $[taskcat_getaz_2]
     RemoteAccessCIDR: "127.0.0.1/32"

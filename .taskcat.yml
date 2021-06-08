@@ -1,22 +1,24 @@
 project:
   name: quickstart-darktrace-vsensor
   owner: quickstart-eng@amazon.com
+  s3_regional_buckets: true
   parameters:
     QSS3BucketName: $[taskcat_autobucket]
     QSS3BucketRegion: $[taskcat_current_region]
-    QSS3KeyPrefix: quickstart-darktrace-vsensor/
+    QSS3KeyPrefix: "quickstart-darktrace-vsensor/"
     BastionKeyPairName: $[taskcat_getkeypair]
     AvailabilityZones: $[taskcat_getaz_2]
     RemoteAccessCIDR: "127.0.0.1/32"
-    VSensorApplianceHostname: "https://example.com"
-    VSensorAppliancePushtoken: "FakePushToken"
+    VSensorApplianceHostname: "https://darktrace.com"
+    VSensorAppliancePushtoken: "aws-quickstart-pushtoken:12345678abcdefg"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
     VSensorKeyPairName: $[taskcat_getkeypair]
   template: ./templates/darktrace-vsensor-new-vpc.template.yaml
 tests:
   vsensor:
     regions:
-      - eu-west-1
+      # - eu-west-1
+      - us-east-1
   # vsensor-all-regions:
   #   regions:
   #     - ap-south-1

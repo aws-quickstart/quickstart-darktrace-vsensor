@@ -45,7 +45,9 @@ Metadata:
       - Label:
           default: "Quickstart Config"
         Parameters:
-          - QSURL
+          - QSS3BucketName
+          - QSS3BucketRegion
+          - QSS3KeyPrefix
           - ShortID
 
 
@@ -96,8 +98,12 @@ Metadata:
       LifecycleS3BucketDays:
         default: PCAP Storage Lifecycle (Days)
       # Quickstart Config
-      QSURL:
-        default: "Quickstart bucket URL"
+      QSS3BucketName:
+        default: Quick Start S3 bucket name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
+      QSS3KeyPrefix:
+        default: Quick Start S3 Key Prefix
       ShortID:
         default: "Quickstart Short Unique ID"
 
@@ -112,6 +118,7 @@ Parameters:
     Description: Which port should the vSensor connect to the Appliance on?
     Default: 443
   AppliancePushtoken:
+    AllowedPattern: ^[a-zA-Z0-9-]{4,64}:[a-zA-Z0-9]{5,63}$
     Type: String
     Description: Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
 
@@ -133,6 +140,7 @@ Parameters:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: Which AWS Security Group IDs would you like to apply for the vSensor? Note that a basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.
   VsensorUpdatekey:
+    AllowedPattern: ^[a-zA-Z0-9%\.]+:[a-zA-Z0-9]+$
     Type: String
     Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
     Default: 'XXXXXX:XXXX'
@@ -216,9 +224,29 @@ Parameters:
     Description: Enter the number of days Packet Captures (PCAPs) should be kept for in S3
     Default: 7
   # Quickstart Config
-  QSURL:
+  QSS3BucketName:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+      (-).
+    Default: aws-quickstart
+    Description: S3 bucket name for the Quick Start assets. This string can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
+      or end with a hyphen (-).
     Type: String
-    Description: "QuickStart Bucket URL"
+  QSS3BucketRegion:
+    Default: 'eu-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: ^[0-9a-zA-Z-/]*$
+    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/).
+    Default: quickstart-darktrace-vsensor/
+    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
   ShortID:
     AllowedPattern: ^[0-9a-z-]{0,12}$
     ConstraintDescription: Unique ID prefix can include up to 12 characters, including numbers, lowercase letters, hyphens (-).
@@ -226,6 +254,11 @@ Parameters:
     Default: ""
     Type: String
 
+Conditions:
+  UsingDefaultBucket: !Equals 
+    - !Ref QSS3BucketName
+    -  "aws-quickstart"
+    
 Resources:
 
   ## Generate a short ID if the user does not define one.
@@ -253,8 +286,14 @@ Resources:
               -
                 Effect: "Allow"
                 Action:
-                  - "logs:*"
-                Resource: "*"
+                  - 'logs:CreateLogStream'
+                  - 'logs:GetLogEvents'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:PutRetentionPolicy'
+                  - 'logs:CreateLogGroup'
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::AccountId}:*"
 
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function
@@ -311,10 +350,16 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL:
-        !Sub
-          - '${QSURL}templates/darktrace-vsensor-ami.template.yaml'
-          - QSURL: !Ref QSURL
+      TemplateURL: !Sub
+        - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-ami.template.yaml
+        - S3Bucket: !If
+            - UsingDefaultBucket
+            - !Sub "aws-quickstart-${AWS::Region}"
+            - !Ref "QSS3BucketName"
+          S3Region: !If
+            - UsingDefaultBucket
+            - !Ref "AWS::Region"
+            - !Ref "QSS3BucketRegion"
       Parameters:
         TargetAmiSSMName:
           !Sub
@@ -457,175 +502,207 @@ Resources:
     DependsOn: "CreateAMIStack"
     Properties:
       LaunchTemplateData:
-        UserData: !Base64 
-          'Fn::Sub': |
-            #!/bin/bash +xe
-            touch /etc/darktrace/.userdata-started
-            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-            # See https://youtu.be/unMiTRw8JVE for an example on how to review this console output.
-            echo "Starting userdata"
-            echo "Setting configuration"
-            #set updatekey, upgrade and enable daily updates
-            set_updatekey.sh ${VsensorUpdatekey}
-            sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
-            set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
-            sleep 5
-            if [ -n "${osSensorHMAC}" ]; then
-              set_ossensor_hmac.sh ${osSensorHMAC}
+        UserData: !Base64
+          'Fn::Sub': 
+            - |
+              #!/bin/bash -xe
+
+              function exittrap() {
+                  exitcode="$?"
+                  set +e
+                  INSTANCE_ID="`wget -q -O - http://instance-data/latest/meta-data/instance-id`"
+                  if [ "$exitcode" -gt 0 ]; then
+                      echo "Failed to successfully configure vSensor, more details in /var/log/user-data.log"
+                      aws autoscaling complete-lifecycle-action --lifecycle-action-result ABANDON --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region} 
+                  else
+                      echo "Successful configuration of vSensor."
+                      aws autoscaling complete-lifecycle-action --lifecycle-action-result CONTINUE --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region}
+                  fi
+                  exit "$exitcode"
+              }
+
+              touch /etc/darktrace/.userdata-started
+              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+              trap "exittrap" EXIT
+
+              # See https://youtu.be/unMiTRw8JVE for an example on how to review this console output.
+              echo "Starting userdata"
+
+              echo "Running firstboot scripts"
+              /usr/lib/inithooks/firstboot.d/15random-uuid
+              /usr/lib/inithooks/firstboot.d/15regen-sslkeys
+              touch /etc/darktrace/.userdata-firstboot-complete
+
+              echo "Setting configuration"
+              #set updatekey, upgrade and enable daily updates
+              set_updatekey.sh ${VsensorUpdatekey}
+              sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
+              set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
               sleep 5
-            fi
-            set_pcap_s3_bucket.sh ${PCAPS}
-            sleep 5
-            touch /etc/darktrace/.userdata-config-complete
-            echo "Completed vSensor configuration"
-            cat >CW_AGENT.conf <<'EOF'
-            {
-              "agent": {
-                "metrics_collection_interval": 60,
-                "run_as_user": "root"
-              },
-              "logs": {
-                "logs_collected": {
-                  "files": {
-                    "collect_list": [
-                      {
-                        "file_path": "/var/log/syslog",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/sabreserver/lite/sabreserverlite.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/darktrace-apt-dist-upgrade.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/dpkg.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/darktrace-bro-keepalive.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/apt/term.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/apt/history.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/darktrace-sabre-mole/manager.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      },
-                      {
-                        "file_path": "/var/log/nginx/access.log",
-                        "log_group_name": "${vSensorLogGroup}",
-                        "log_stream_name": "{instance_id}"
-                      }
-                    ]
-                  }
-                }
-              },
-              "metrics": {
-                "namespace": "vSensorMetrics",
-                "append_dimensions": {
-                  "AutoScalingGroupName": "${!aws:AutoScalingGroupName}",
-                  "ImageId": "${!aws:ImageId}",
-                  "InstanceId": "${!aws:InstanceId}",
-                  "InstanceType": "${!aws:InstanceType}"
+              if [ -n "${osSensorHMAC}" ]; then
+                set_ossensor_hmac.sh ${osSensorHMAC}
+                sleep 5
+              fi
+              set_pcap_s3_bucket.sh ${PCAPS}
+              sleep 5
+              touch /etc/darktrace/.userdata-config-complete
+              echo "Completed vSensor configuration"
+              cat >CW_AGENT.conf <<'EOF'
+              {
+                "agent": {
+                  "metrics_collection_interval": 60,
+                  "run_as_user": "root"
                 },
-                "aggregation_dimensions": [["AutoScalingGroupName"], ["InstanceId", "InstanceType"]],
-                "metrics_collected": {
-                  "cpu": {
-                    "measurement": [
-                      "cpu_usage_active",
-                      "cpu_usage_iowait",
-                      "cpu_usage_user",
-                      "cpu_usage_system"
-                    ],
-                    "metrics_collection_interval": 60,
-                    "resources": [
-                      "*"
-                    ],
-                    "totalcpu": false
+                "logs": {
+                  "logs_collected": {
+                    "files": {
+                      "collect_list": [
+                        {
+                          "file_path": "/var/log/syslog",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/sabreserver/lite/sabreserverlite.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/darktrace-apt-dist-upgrade.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/dpkg.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/darktrace-bro-keepalive.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/apt/term.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/apt/history.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/darktrace-sabre-mole/manager.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        },
+                        {
+                          "file_path": "/var/log/nginx/access.log",
+                          "log_group_name": "${vSensorLogGroup}",
+                          "log_stream_name": "{instance_id}"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "metrics": {
+                  "namespace": "vSensorMetrics",
+                  "append_dimensions": {
+                    "AutoScalingGroupName": "${!aws:AutoScalingGroupName}",
+                    "ImageId": "${!aws:ImageId}",
+                    "InstanceId": "${!aws:InstanceId}",
+                    "InstanceType": "${!aws:InstanceType}"
                   },
-                  "disk": {
-                    "measurement": [
-                      "used_percent",
-                      "inodes_free"
-                    ],
-                    "metrics_collection_interval": 60,
-                    "resources": [
-                      "*"
-                    ]
-                  },
-                  "diskio": {
-                    "measurement": [
-                      "io_time"
-                    ],
-                    "metrics_collection_interval": 60,
-                    "resources": [
-                      "*"
-                    ]
-                  },
-                  "mem": {
-                    "measurement": [
-                      "mem_used_percent"
-                    ],
-                    "metrics_collection_interval": 60
-                  },
-                  "net": {
-                    "measurement": [
-                      "net_bytes_recv",
-                      "net_bytes_sent",
-                      "net_drop_in",
-                      "net_drop_out",
-                      "net_err_in",
-                      "net_err_out",
-                      "net_packets_sent",
-                      "net_packets_recv"
-                    ],
-                    "metrics_collection_interval": 60,
-                    "resources": [
-                      "*"
-                    ]
-                  },
-                  "statsd": {
-                    "metrics_aggregation_interval": 60,
-                    "metrics_collection_interval": 10,
-                    "service_address": ":8125"
-                  },
-                  "swap": {
-                    "measurement": [
-                      "swap_used_percent"
-                    ],
-                    "metrics_collection_interval": 60
+                  "aggregation_dimensions": [["AutoScalingGroupName"], ["InstanceId", "InstanceType"]],
+                  "metrics_collected": {
+                    "cpu": {
+                      "measurement": [
+                        "cpu_usage_active",
+                        "cpu_usage_iowait",
+                        "cpu_usage_user",
+                        "cpu_usage_system"
+                      ],
+                      "metrics_collection_interval": 60,
+                      "resources": [
+                        "*"
+                      ],
+                      "totalcpu": false
+                    },
+                    "disk": {
+                      "measurement": [
+                        "used_percent",
+                        "inodes_free"
+                      ],
+                      "metrics_collection_interval": 60,
+                      "resources": [
+                        "*"
+                      ]
+                    },
+                    "diskio": {
+                      "measurement": [
+                        "io_time"
+                      ],
+                      "metrics_collection_interval": 60,
+                      "resources": [
+                        "*"
+                      ]
+                    },
+                    "mem": {
+                      "measurement": [
+                        "mem_used_percent"
+                      ],
+                      "metrics_collection_interval": 60
+                    },
+                    "net": {
+                      "measurement": [
+                        "net_bytes_recv",
+                        "net_bytes_sent",
+                        "net_drop_in",
+                        "net_drop_out",
+                        "net_err_in",
+                        "net_err_out",
+                        "net_packets_sent",
+                        "net_packets_recv"
+                      ],
+                      "metrics_collection_interval": 60,
+                      "resources": [
+                        "*"
+                      ]
+                    },
+                    "statsd": {
+                      "metrics_aggregation_interval": 60,
+                      "metrics_collection_interval": 10,
+                      "service_address": ":8125"
+                    },
+                    "swap": {
+                      "measurement": [
+                        "swap_used_percent"
+                      ],
+                      "metrics_collection_interval": 60
+                    }
                   }
                 }
               }
-            }
-            EOF
-            cp ./CW_AGENT.conf /etc/darktrace/
-            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:./CW_AGENT.conf -s
-            sudo systemctl start amazon-cloudwatch-agent
-            touch /etc/darktrace/.userdata-cw-complete
-            echo "Cloudwatch configuration complete."
-            service confconsole restart # To update AWS screenshot with current config.
-            repo-control.sh -nevua ${VsensorUpdatekey}
-            touch /etc/darktrace/.userdata-completed
-            echo "Update configuration checks complete"
-            echo "Userdata script complete."
+              EOF
+              cp ./CW_AGENT.conf /etc/darktrace/
+              sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:./CW_AGENT.conf -s
+              sudo systemctl start amazon-cloudwatch-agent
+              touch /etc/darktrace/.userdata-cw-complete
+              echo "Cloudwatch configuration complete."
+              service confconsole restart || true # To update AWS screenshot with current config.
+              touch /etc/darktrace/.userdata-confconsole-restart
+              repo-control.sh -nevua ${VsensorUpdatekey} || true
+              touch /etc/darktrace/.userdata-completed
+              echo "Update configuration checks complete"
+              echo "Userdata script complete."
+            - autoScalingGroupName: !Sub
+                - "${ShortID}-vSensor-ASG"
+                - ShortID: !GetAtt ShortIDRand.IDString
+              lifecycleHookName: !Sub
+                - "${ShortID}-vSensor-LifecycleHook"
+                - ShortID: !GetAtt ShortIDRand.IDString
         KeyName: !Ref KeyPairName
         InstanceType: !Ref InstanceType
         BlockDeviceMappings:
@@ -650,10 +727,21 @@ Resources:
           - "${ShortID}-vSensor-Launch-Template"
           - ShortID: !GetAtt ShortIDRand.IDString
 
+  # Used in UserData for ASG vSensors to wait for configuration completion / failure before adding to Load Balancer.
+  LifecycleStartHook:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      LifecycleHookName:
+        !Sub
+          - "${ShortID}-vSensor-LifecycleHook"
+          - ShortID: !GetAtt ShortIDRand.IDString
+      AutoScalingGroupName: !Ref ASG
+      DefaultResult: ABANDON
+      HeartbeatTimeout: 3600
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+
   vSensorLogGroup:
     Type: 'AWS::Logs::LogGroup'
-    #DeletionPolicy: Retain
-    #UpdateReplacePolicy: Retain  
     Properties:
       LogGroupName:
         !Sub
@@ -843,37 +931,9 @@ Resources:
                 - ec2.amazonaws.com
             Action:
               - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
       Policies:
-        - PolicyName: CloudWatchAgentServerRole
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'cloudwatch:PutMetricData'
-                  - 'cloudwatch:GetMetricStatistics'
-                  - 'ec2:DescribeVolumes'
-                  - 'ec2:DescribeTags'
-                  - 'ec2Messages:GetMessages'
-                  - 'ssm:UpdateInstanceInformation'
-                  - 'ssm:ListAssociations'
-                  - 'ssm:ListInstanceAssociations'
-                  - 'logs:PutLogEvents'
-                  - 'logs:DescribeLogStreams'
-                  - 'logs:DescribeLogGroups'
-                  - 'logs:CreateLogStream'
-                  - 'logs:CreateLogGroup'
-                  - "ssmmessages:CreateControlChannel"
-                  - "ssmmessages:CreateDataChannel"
-                  - "ssmmessages:OpenControlChannel"
-                  - "ssmmessages:OpenDataChannel"
-                Resource:
-                  - '*'
-              - Effect: Allow
-                Action:
-                  - 'ssm:GetParameter'
-                Resource:
-                  - 'arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*'
         - PolicyName: ListPCAPBucket
           PolicyDocument:
             Version: 2012-10-17
@@ -884,7 +944,7 @@ Resources:
                 - 's3:GetBucketLocation'
                 - 's3:GetLifecycleConfiguration'
               Resource:
-                - !Sub 'arn:aws:s3:::${PCAPS}'
+                - !Sub 'arn:${AWS::Partition}:s3:::${PCAPS}'
         - PolicyName: AccessPCAPBucket
           PolicyDocument:
             Version: 2012-10-17
@@ -896,7 +956,19 @@ Resources:
                 - 's3:DeleteObject'
                 - 's3:PutObjectTagging'
               Resource:
-                - !Sub 'arn:aws:s3:::${PCAPS}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${PCAPS}/*'
+        - PolicyName: "CompleteLifecycleActionAllowPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "autoscaling:CompleteLifecycleAction"
+                Resource: !Sub
+                  - "arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/${AutoScalingGroupName}"
+                  - AutoScalingGroupName: !Sub
+                    - "${ShortID}-vSensor-ASG"
+                    - ShortID: !GetAtt ShortIDRand.IDString
 
 Outputs:
   BucketName:

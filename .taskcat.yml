@@ -9,8 +9,8 @@ project:
     BastionKeyPairName: $[taskcat_getkeypair]
     AvailabilityZones: $[taskcat_getaz_2]
     RemoteAccessCIDR: "127.0.0.1/32"
-    VSensorApplianceHostname: "https://example.com"
-    VSensorAppliancePushtoken: "FakePushToken"
+    VSensorApplianceHostname: "https://darktrace.com"
+    VSensorAppliancePushtoken: "aws-quickstart-pushtoken:12345678abcdefg"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
     VSensorKeyPairName: $[taskcat_getkeypair]
   template: ./templates/darktrace-vsensor-new-vpc.template.yaml

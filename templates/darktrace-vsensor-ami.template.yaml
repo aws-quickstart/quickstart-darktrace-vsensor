@@ -105,6 +105,8 @@ Resources:
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole'
       Policies:
+        # ec2:Describe* cannot have resource specified.
+        # See https://aws.amazon.com/blogs/security/demystifying-ec2-resource-level-permissions/
         - PolicyName: EC2Access
           PolicyDocument:
             Version: '2012-10-17'
@@ -168,6 +170,7 @@ Resources:
         Version: 2012-10-17
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole'
+      # https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssystemsmanager.html
       Policies:
         - PolicyName: SSMAccess
           PolicyDocument:
@@ -180,7 +183,8 @@ Resources:
                   - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:automation-definition/*'
               - Effect: 'Allow'
                 Action: ssm:GetAutomationExecution
-                Resource: '*'
+                Resource:
+                  - '*'
         - PolicyName: CWAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -203,21 +207,31 @@ Resources:
                   - 'ec2:TerminateInstances'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:*'
+        # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonmessagedeliveryservice.html
         - PolicyName: EC2MessagesAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: 'Allow'
                 Action:
-                  - ec2messages:*
-                Resource: '*'
+                  - ec2messages:GetEndpoint
+                  - ec2messages:GetMessages
+                  - ec2messages:AcknowledgeMessage
+                  - ec2messages:FailMessage
+                  - ec2messages:SendReply
+                Resource:
+                  - '*'
+        # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonsessionmanagermessagegatewayservice.html
         - PolicyName: SSMMessagesAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: 'Allow'
                 Action:
-                  - ssmmessages:*
+                  - ssmmessages:OpenControlChannel
+                  - ssmmessages:CreateDataChannel
+                  - ssmmessages:CreateControlChannel
+                  - ssmmessages:OpenDataChannel
                 Resource:
                   - '*'
       RoleName:
@@ -292,7 +306,7 @@ Resources:
             type: String
 
         mainSteps:
-          - name: "SCInstanceIds"
+          - name: "InstanceIds"
             action: aws:executeAwsApi
             onFailure: "step:signalfailure"
             nextStep: "InstallVsensor"
@@ -317,14 +331,14 @@ Resources:
             inputs:
               DocumentName: AWS-RunShellScript
               InstanceIds:
-                - "{{SCInstanceIds.InstanceId}}"
+                - "{{InstanceIds.InstanceId}}"
               Parameters:
                 commands:
                   - '#!/bin/bash'
-                  - 'bash <(wget -O - https://packages.darktrace.com/install) --updateKey {{VsensorUpdatekey}}'
-                  - 'wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb'
-                  - 'sudo dpkg -i -E ./amazon-cloudwatch-agent.deb'
-                  - 'systemctl enable amazon-cloudwatch-agent'
+                  - 'bash <(wget -O - https://packages.darktrace.com/install) --updateKey {{VsensorUpdatekey}} || exit 1'
+                  - 'wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb || exit 1'
+                  - 'sudo dpkg -i -E ./amazon-cloudwatch-agent.deb || exit 1'
+                  - 'systemctl enable amazon-cloudwatch-agent || exit 1'
                   # If any steps fails signals CFN of Failure
               CloudWatchOutputConfig:
                 CloudWatchOutputEnabled: "true"
@@ -337,7 +351,7 @@ Resources:
             onFailure: "step:signalfailure"
             nextStep: "writevSensorAmiId"
             inputs:
-              InstanceId: "{{SCInstanceIds.InstanceId}}"
+              InstanceId: "{{InstanceIds.InstanceId}}"
               ImageName: "{{ShortID}}-vSensor-AMI"
               NoReboot: true
             outputs:
@@ -366,7 +380,7 @@ Resources:
             inputs:
               Service: ec2
               Api: TerminateInstances
-              InstanceIds: ["{{SCInstanceIds.InstanceId}}"]
+              InstanceIds: ["{{InstanceIds.InstanceId}}"]
 
           # If all steps complete successfully signals CFN of Success
           - name: "signalsuccess"
@@ -378,7 +392,7 @@ Resources:
               LogicalResourceId: "BuildEC2Instance"
               StackName: "{{StackName}}"
               Status: SUCCESS
-              UniqueId: "{{SCInstanceIds.InstanceId}}"
+              UniqueId: "{{InstanceIds.InstanceId}}"
 
           - name: "signalfailure"
             action: "aws:executeAwsApi"
@@ -388,4 +402,4 @@ Resources:
               LogicalResourceId: "BuildEC2Instance"
               StackName: "{{StackName}}"
               Status: FAILURE
-              UniqueId: "{{SCInstanceIds.InstanceId}}"
+              UniqueId: "{{InstanceIds.InstanceId}}"

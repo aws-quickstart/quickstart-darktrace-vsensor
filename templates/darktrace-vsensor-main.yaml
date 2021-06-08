@@ -151,6 +151,7 @@ Parameters:
     Description: Which port should the vSensor connect to the Appliance on?
     Default: 443
   VSensorAppliancePushtoken:
+    AllowedPattern: ^[a-zA-Z0-9-]{4,64}:[a-zA-Z0-9]{5,63}$
     Type: String
     Description: Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
 
@@ -169,6 +170,7 @@ Parameters:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Description: Which EC2 Key-pair should be used to connect to the vSensor?
   VSensorUpdatekey:
+    AllowedPattern: ^[a-zA-Z0-9%\.]+:[a-zA-Z0-9]+$
     Type: String
     Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
     Default: 'XXXXXX:XXXX'
@@ -338,9 +340,9 @@ Parameters:
     Type: String
 
 Conditions:
-  UsingDefaultBucket: !Equals
+  UsingDefaultBucket: !Equals 
     - !Ref QSS3BucketName
-    -  "aws-quickstart"
+    - "aws-quickstart"
 
 Resources:
 
@@ -369,8 +371,14 @@ Resources:
               -
                 Effect: "Allow"
                 Action:
-                  - "logs:*"
-                Resource: "*"
+                  - 'logs:CreateLogStream'
+                  - 'logs:GetLogEvents'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:PutRetentionPolicy'
+                  - 'logs:CreateLogGroup'
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::AccountId}:*"
 
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function
@@ -417,7 +425,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       TemplateURL:
-        !Sub
+          !Sub
           - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template.yaml'
           - S3Bucket: !If
               - UsingDefaultBucket
@@ -502,7 +510,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-main.template.yaml'
+          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-workload.template.yaml'
           - S3Bucket: !If
               - UsingDefaultBucket
               - !Sub "aws-quickstart-${AWS::Region}"
@@ -526,12 +534,6 @@ Resources:
               - Fn::GetAtt:
                 - VPCStack
                 - Outputs.PrivateSubnet2AID
-              #- Fn::GetAtt: # Can't use two subnets in same availability zone...
-              #  - VPCStack
-              #  - Outputs.PublicSubnet1ID
-              #- Fn::GetAtt:
-              #  - VPCStack
-              #  - Outputs.PublicSubnet2ID
         DeploymentVPC:
           !GetAtt
             - VPCStack
@@ -554,17 +556,9 @@ Resources:
         VpcCIDRBlock: !Ref VPCCIDR
         SshCIDRBlock: !Ref VPCCIDR
         KeyPairName: !Ref VSensorKeyPairName
-        QSURL:
-          !Sub
-            - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}'
-            - S3Bucket: !If
-                - UsingDefaultBucket
-                - !Sub "aws-quickstart-${AWS::Region}"
-                - !Ref "QSS3BucketName"
-              S3Region: !If
-                - UsingDefaultBucket
-                - !Ref "AWS::Region"
-                - !Ref "QSS3BucketRegion"
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3BucketRegion: !Ref QSS3BucketRegion
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
         ShortID: !GetAtt ShortIDRand.IDString
       Tags:
         - Key: "Name"

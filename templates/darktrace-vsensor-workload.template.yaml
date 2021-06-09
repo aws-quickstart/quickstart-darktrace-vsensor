@@ -544,8 +544,11 @@ Resources:
                 set_ossensor_hmac.sh ${osSensorHMAC}
                 sleep 5
               fi
-              set_pcap_s3_bucket.sh ${PCAPS}
-              sleep 5
+              # If using dummy appliance, using for CI, don't enable PCAP storage to allow successful bucket deletion.
+              if [ "${ApplianceHostname}" != "https://darktrace.com" ]; then
+                set_pcap_s3_bucket.sh ${PCAPS}
+                sleep 5
+              fi
               touch /etc/darktrace/.userdata-config-complete
               echo "Completed vSensor configuration"
               cat >CW_AGENT.conf <<'EOF'

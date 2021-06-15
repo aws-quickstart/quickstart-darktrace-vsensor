@@ -335,7 +335,7 @@ Parameters:
   ShortID:
     AllowedPattern: ^[0-9a-z-]{0,12}$
     ConstraintDescription: Unique ID prefix can include up to 12 characters, including numbers, lowercase letters, hyphens (-).
-    Description: "QuickStart short unique ID, used to identify resources from other installtions of this Quickstart. If left empty, a random string is generated."
+    Description: "QuickStart short unique ID, used to identify resources from other installations of this Quickstart. If left empty, a random string is generated."
     Default: ""
     Type: String
 
@@ -378,7 +378,7 @@ Resources:
                   - 'logs:DescribeLogStreams'
                   - 'logs:PutRetentionPolicy'
                   - 'logs:CreateLogGroup'
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::AccountId}:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
 
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function

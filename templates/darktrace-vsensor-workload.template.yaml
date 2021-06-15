@@ -878,7 +878,6 @@ Resources:
   # From https://gist.github.com/drumadrian/e1601ab34e7f609b5075f65599108960
   # Empty the PCAP bucket on Stack deletion to prevent failure.
   CleanupBucketOnDeleteLambdaRole:
-    DependsOn: 
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:

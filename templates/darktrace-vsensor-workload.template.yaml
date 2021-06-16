@@ -1109,7 +1109,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+        - "arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
       Policies:
         - PolicyName: ListPCAPBucket
           PolicyDocument:
@@ -1141,7 +1141,7 @@ Resources:
               - Effect: "Allow"
                 Action: "autoscaling:CompleteLifecycleAction"
                 Resource: !Sub
-                  - "arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/${AutoScalingGroupName}"
+                  - "arn:${AWS::Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/${AutoScalingGroupName}"
                   - AutoScalingGroupName: !Sub
                     - "${ShortID}-vSensor-ASG"
                     - ShortID: !GetAtt ShortIDRand.IDString

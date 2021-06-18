@@ -566,3 +566,69 @@ Resources:
             !Sub
               - "${ShortID}-vSensor-Stack"
               - ShortID: !GetAtt ShortIDRand.IDString
+
+Outputs:
+
+  DeploymentVPC:
+    Description: ID of the Deployed VPC.
+    Value: !GetAtt
+      - VPCStack
+      - Outputs.VPCID
+
+  PrivateSubnets:
+    Description: Subnet IDs of the private subnets created.
+    Value: !Join
+      - ","
+      - - Fn::GetAtt:
+          - VPCStack
+          - Outputs.PrivateSubnet1AID
+        - Fn::GetAtt:
+          - VPCStack
+          - Outputs.PrivateSubnet2AID
+
+  PublicSubnets:
+    Description: Subnet IDs of the public subnets created.
+    Value: !Join
+      - ","
+      - - Fn::GetAtt:
+          - VPCStack
+          - Outputs.PublicSubnet1AID
+        - Fn::GetAtt:
+          - VPCStack
+          - Outputs.PublicSubnet2AID
+
+  LoadBalancer:
+    Description: Elastic Network Load Balancer, required for osSensor clients.
+    Value:
+      Fn::GetAtt:
+      - VSensorStack
+      - Outputs.LoadBalancer
+
+  LoadBalancerDNS:
+    Description: DNS name of the Elastic Network Load Balancer, required for osSensor clients.
+    Value:
+      Fn::GetAtt:
+      - VSensorStack
+      - Outputs.LoadBalancerDNS
+
+  TrafficMirrorFilterId:
+    Description: ID of the traffic mirror filter generated for Traffic Mirroring Sessions.
+    Value:
+      Fn::GetAtt:
+      - VSensorStack
+      - Outputs.TrafficMirrorFilterId
+
+  TrafficMirrorTargetId:
+    Description: ID of the traffic mirror target generated for Traffic Mirroring Sessions.
+    Value: 
+      Fn::GetAtt:
+      - VSensorStack
+      - Outputs.TrafficMirrorTargetId
+
+  BucketName:
+    Description: Name of the PCAP S3 bucket.
+    Value:
+      Fn::GetAtt:
+      - VSensorStack
+      - Outputs.BucketName
+

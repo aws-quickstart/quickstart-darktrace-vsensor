@@ -1,14 +1,18 @@
 // Replace the <n> in each row to specify the number of resources used in this deployment. Remove the rows for resources that aren’t used.
+
+
 |===
 |Resource |This deployment uses
 
 // Space needed to maintain table headers
-|VPCs |<n>
-|Elastic IP addresses |<n>
-|AWS Identity and Access Management (IAM) security groups |<n>
-|IAM roles |<n>
-|Auto Scaling groups |<n>
-|Application Load Balancers |<n>
-|Network Load Balancers |<n>
-|<type> instances |<n>
+|VPCs |1
+|Subnets |4
+|Elastic IP addresses |3
+|S3 Buckets |1
+|Lambdas   |4
+|IAM roles |7
+|Auto Scaling groups |2
+|Elastic Network Load Balancers |1
+|t3.micro Instances (Bastion) |1
+|vSensor Instances (Size Configurable)   |1+
 |===

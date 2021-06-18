@@ -1151,10 +1151,18 @@ Outputs:
     Description: Name of the PCAP S3 bucket.
     Value: !Ref PCAPS
 
+  LoadBalancer:
+    Description: Elastic Network Load Balancer, required for osSensor clients.
+    Value: !Ref LoadBalancer
+
+  LoadBalancerDNS:
+    Description: DNS name of the Elastic Network Load Balancer, required for osSensor clients.
+    Value: !GetAtt LoadBalancer.DNSName
+
   TrafficMirrorFilterId:
-    Description: ID of the traffic mirror filter generated.
+    Description: ID of the traffic mirror filter generated for Traffic Mirroring Sessions.
     Value: !Ref TrafficMirrorFilter
 
   TrafficMirrorTargetId:
-    Description: ID of the traffic mirror target generated.
+    Description: ID of the traffic mirror target generated for Traffic Mirroring Sessions.
     Value: !Ref TrafficMirrorTarget

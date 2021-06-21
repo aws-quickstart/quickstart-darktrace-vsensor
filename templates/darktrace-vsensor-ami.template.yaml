@@ -2,6 +2,12 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: This template is used to build the vSensor AMI.(qs-1rmjte85h)
 
 Metadata:
+  QSLint:
+    Exclusions: [ W9002, W9003, W9004, W9006 ]
+  cfn-lint:
+    config:
+      ignore_checks:
+        - E9101
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -271,6 +277,13 @@ Resources:
               - !Sub "aws ssm start-automation-execution --document-name ${SsmAMIBuild} --region ${AWS::Region}"
 
   SsmAMIBuild:
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E9101
+          ignore_reasons:
+            E9101: Not applicable to actions like aws:executeAwsApi
     Type: AWS::SSM::Document
     Properties:
       Name:

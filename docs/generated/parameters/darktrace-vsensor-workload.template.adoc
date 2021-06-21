@@ -1,0 +1,55 @@
+
+.Appliance Configuration
+[width="100%",cols="16%,11%,73%",options="header",]
+|===
+|Parameter label (name) |Default value|Description|Appliance Hostname
+(`ApplianceHostname`)|`**__Requires input__**`|Which Appliance should this vSensor connect to?|Appliance Port
+(`AppliancePort`)|`443`|Which port should the vSensor connect to the Appliance on?|Appliance Push Token
+(`AppliancePushtoken`)|`**__Requires input__**`|Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
+|===
+.vSensor Configuration
+[width="100%",cols="16%,11%,73%",options="header",]
+|===
+|Parameter label (name) |Default value|Description|EC2 Instance Type
+(`InstanceType`)|`t3.medium`|EC2 instance type. Default is t3.medium|EC2 Key-pair Name
+(`KeyPairName`)|`**__Requires input__**`|Which EC2 Key-pair should be used to connect to the vSensor?|Security Groups
+(`InstanceSecurityGroups`)|`**__Requires input__**`|Which AWS Security Group IDs would you like to apply for the vSensor? Note that a basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.|Update Key
+(`VsensorUpdatekey`)|`XXXXXX:XXXX`|Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)|Desired vSensor instance capacity
+(`DesiredCapacityASG`)|`1`|Desired number of vSensor instances within the auto-scaling group.|Minimum vSensor instance capacity
+(`MinSizeASG`)|`1`|Minimum number of vSensor instances within the auto-scaling group.|Maximum vSensor instance capacity
+(`MaxSizeASG`)|`5`|Maximum number of vSensor instances within the auto-scaling group.|osSensor HMAC Token
+(`osSensorHMAC`)|`**__Blank string__**`|HMAC Token to authenticate osSensors with the vSensor.
+|===
+.Networking Configuration
+[width="100%",cols="16%,11%,73%",options="header",]
+|===
+|Parameter label (name) |Default value|Description|Deployment VPC
+(`DeploymentVPC`)|`**__Requires input__**`|VPC of target deployment|VPC CDIR Block
+(`VpcCIDRBlock`)|`172.16.0.0/12`|CIDR Block of VPC|SSH CDIR Block
+(`SshCIDRBlock`)|`172.16.0.0/12`|CIDR Block of allowed SSH Access to vSensors.|Subnets
+(`Subnets`)|`**__Requires input__**`|List the Subnet Ids that the vSensor should be launched into. You can specify at most one subnet per Availability Zone.
+|===
+.Traffic Mirror Configuration
+[width="100%",cols="16%,11%,73%",options="header",]
+|===
+|Parameter label (name) |Default value|Description|Rule number for Traffic Mirror Rule
+(`TrafficMirrorRuleNumber`)|`100`|What number for the traffic mirror filter rule|Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
+(`TrafficMirrorSourceCIDR`)|`0.0.0.0/0`|Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)|Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
+(`TrafficMirrorDestCIDR`)|`0.0.0.0/0`|Dest CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
+|===
+.Logs & PCAPS Configuration
+[width="100%",cols="16%,11%,73%",options="header",]
+|===
+|Parameter label (name) |Default value|Description|CloudWatch Log Retention (Days)
+(`LogGroupRetention`)|`30`|Select the number of days logs should be kept in CloudWatch|PCAP Storage Lifecycle (Days)
+(`LifecycleS3BucketDays`)|`7`|Enter the number of days Packet Captures (PCAPs) should be kept for in S3
+|===
+.Quickstart Config
+[width="100%",cols="16%,11%,73%",options="header",]
+|===
+|Parameter label (name) |Default value|Description|Quick Start S3 bucket name
+(`QSS3BucketName`)|`aws-quickstart`|S3 bucket name for the Quick Start assets. This string can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).|Quick Start S3 bucket region
+(`QSS3BucketRegion`)|`eu-east-1`|The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.|Quick Start S3 Key Prefix
+(`QSS3KeyPrefix`)|`quickstart-darktrace-vsensor/`|S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).|Quickstart Short Unique ID
+(`ShortID`)|`**__Blank string__**`|QuickStart short unique ID, used to identify resources from other installations of this Quickstart. If left empty, a random string is generated.
+|===

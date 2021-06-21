@@ -1,23 +1,72 @@
 // Add steps as necessary for accessing the software, post-configuration, and testing. Don’t include full usage instructions for your software, but add links to your product documentation for that information.
 //Should any sections not be applicable, remove them
 
-== Test the deployment
-// If steps are required to test the deployment, add them here. If not, remove the heading
-
 == Post deployment steps
-// If Post-deployment steps are required, add them here. If not, remove the heading
 
-== Best practices for using {partner-product-short-name} on AWS
-// Provide post-deployment best practices for using the technology on AWS, including considerations such as migrating data, backups, ensuring high performance, high availability, etc. Link to software documentation for detailed information.
+=== Configuring Networking
 
-_Add any best practices for using the software._
+As specified earlier, if your Master Appliance is behind a firewall, access must now be allowed.
+
+* If the New VPC deployment was chosen, access to the Master from the *NAT Gateway Elastic IPs* must be granted. These can be found in the *Outputs* as shown above.
+
+* If the Existing VPC deployment was chosen, the IPs of the existing NAT Gateways for the subnets used must be allowed inbound to the Master.
+
+=== Configuring Mirroring of Instances
+
+NOTE: This method is only compatible with new nitro generation AWS EC2 instances (c5/m5/r5 or t3) and select older instances. Older instances like t2.micro do not allow traffic mirroring and will require osSensors for traffic monitoring. Please see the relevant https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types[AWS documentation ^] for more information.
+
+If you wish to automate adding existing EC2 instances to your new deployment, your Darktrace representative can provide scripts and guidance to perform this.
+
+To add EC2 instances for Traffic Mirroring, see https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html[this guide^]. The Traffic Mirror Target and Filter IDs are provided in the *Output* section (shown above).
+
+=== Configuring osSensors
+
+To configure osSensors to be monitored by this Deployment, please use the Public IP / DNS hostname of the Elastic Network Load Balancer. These are shown in the *Outputs* section, as shown above.
+
+NOTE: Guides for configuring osSensors are available on the Darktrace Customer Portal.
+
+=== Test the deployment
+
+This Quick Start should only complete successfully if the parameters fit the correct format and the *Update Key* and *Push Token* are valid.
+
+Once the deployment has completed, the Master UI _System Config_ / _Push Tokens_ section should display the expected number of probes connected.
+
+Once EC2 Instances have been configured for Traffic Mirroring above, these instances should appear inside the Threat Visualiser.
+
 
 == Security
 // Provide post-deployment best practices for using the technology on AWS, including considerations such as migrating data, backups, ensuring high performance, high availability, etc. Link to software documentation for detailed information.
 
-_Add any security-related information._
+==== Network Security
+The default network security setup of this solution follows AWS security best practices. The provisioned {partner-product-name} instances are deployed in private subnets and can only be accessed via SSH via the Bastion.
 
-== Other useful information
-//Provide any other information of interest to users, especially focusing on areas where AWS or cloud usage differs from on-premises usage.
+For existing VPC deployments, it is important for the *Security Groups* defined by the customer allow only required access for SSH from trusted sources. It is not recommended to allow direct SSH access to vSensors from the internet.
 
-_Add any other details that will help the customer use the software on AWS._
+==== OS Security
+
+To gain root access to your vSensor instances you may use `ubuntu` user and then sudo to root. The key-pair provided during deployment will be required to access the `ec2-user` of the Bastion and `ubuntu` user of vSensors.
+
+Deployed Bastions are set to automatically update. 
+The deployed vSensors are configured to update daily from the {partner-company-name} and Ubuntu package repositories for the latest security and product updates.
+
+===== AWS Services
+
+- AWS CloudFormation
+
+* Documentation: https://aws.amazon.com/documentation/cloudformation/
+
+* Helper scripts: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-helper-scripts-reference.html
+
+- Amazon EC2 user guide for Linux https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/
+
+- Amazon S3 https://aws.amazon.com/documentation/s3/
+
+- Amazon VPC https://aws.amazon.com/documentation/vpc/
+
+===== Darktrace
+
+- Darktrace https://darktrace.com
+
+- Darktrace Customer Portal https://customerportal.darktrace.com
+
+- Darktrace Customer Portal vSensor Guides https://customerportal.darktrace.com/product-guides/main/vsensor-introduction

@@ -2,6 +2,12 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: This template is used to build the vSensor AMI.(qs-1rmjte85h)
 
 Metadata:
+  QSLint:
+    Exclusions: [ W9002, W9003, W9004, W9006 ]
+  cfn-lint:
+    config:
+      ignore_checks:
+        - E9101
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -180,7 +186,6 @@ Resources:
                 Action: ssm:StartAutomationExecution
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/*:VersionId}'
-                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:automation-definition/*'
               - Effect: 'Allow'
                 Action: ssm:GetAutomationExecution
                 Resource:
@@ -272,6 +277,13 @@ Resources:
               - !Sub "aws ssm start-automation-execution --document-name ${SsmAMIBuild} --region ${AWS::Region}"
 
   SsmAMIBuild:
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E9101
+          ignore_reasons:
+            E9101: Not applicable to actions like aws:executeAwsApi
     Type: AWS::SSM::Document
     Properties:
       Name:
@@ -308,7 +320,7 @@ Resources:
         mainSteps:
           - name: "InstanceIds"
             action: aws:executeAwsApi
-            onFailure: "step:signalfailure"
+            onFailure: "step:SignalFailure"
             nextStep: "InstallVsensor"
             inputs:
               Service: ec2
@@ -325,7 +337,7 @@ Resources:
 
           - name: InstallVsensor
             action: aws:runCommand
-            onFailure: "step:signalfailure"
+            onFailure: "step:SignalFailure"
             nextStep: "CreateImage"
             timeoutSeconds: 3600
             inputs:
@@ -348,8 +360,8 @@ Resources:
           - name: CreateImage
             action: aws:createImage
             maxAttempts: 3
-            onFailure: "step:signalfailure"
-            nextStep: "writevSensorAmiId"
+            onFailure: "step:SignalFailure"
+            nextStep: "WritevSensorAmiId"
             inputs:
               InstanceId: "{{InstanceIds.InstanceId}}"
               ImageName: "{{ShortID}}-vSensor-AMI"
@@ -360,10 +372,10 @@ Resources:
                 Type: "String"
 
           # Write the custom AMI ID to param store.
-          - name: "writevSensorAmiId"
+          - name: "WritevSensorAmiId"
             action: "aws:executeAwsApi"
-            onFailure: "step:signalfailure"
-            nextStep: "terminateAMIEC2Instance"
+            onFailure: "step:SignalFailure"
+            nextStep: "TerminateAMIEC2Instance"
             inputs:
               Service: ssm
               Api: PutParameter
@@ -373,17 +385,17 @@ Resources:
               Value: "{{CreateImage.vSensorAmiId}}"
 
           # Terminate the AMI EC2 Instance
-          - name: "terminateAMIEC2Instance"
+          - name: "TerminateAMIEC2Instance"
             action: "aws:executeAwsApi"
-            onFailure: "step:signalfailure"
-            nextStep: "signalsuccess"
+            onFailure: "step:SignalFailure"
+            nextStep: "SignalSuccess"
             inputs:
               Service: ec2
               Api: TerminateInstances
               InstanceIds: ["{{InstanceIds.InstanceId}}"]
 
           # If all steps complete successfully signals CFN of Success
-          - name: "signalsuccess"
+          - name: "SignalSuccess"
             action: "aws:executeAwsApi"
             isEnd: True
             inputs:
@@ -394,7 +406,7 @@ Resources:
               Status: SUCCESS
               UniqueId: "{{InstanceIds.InstanceId}}"
 
-          - name: "signalfailure"
+          - name: "SignalFailure"
             action: "aws:executeAwsApi"
             inputs:
               Service: cloudformation
@@ -403,3 +415,155 @@ Resources:
               StackName: "{{StackName}}"
               Status: FAILURE
               UniqueId: "{{InstanceIds.InstanceId}}"
+
+  # From https://gist.github.com/drumadrian/e1601ab34e7f609b5075f65599108960
+  # Deregister the AMI on Stack deletion to prevent failure.
+  CleanupAMIOnDeleteLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        -
+          PolicyName: allowLambdaLogging
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:GetLogEvents'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:PutRetentionPolicy'
+                  - 'logs:CreateLogGroup'
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
+        - PolicyName: AMICleanupLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+                - ec2:DeregisterImage
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:ec2:${AWS::Region}::image/*'
+        - PolicyName: SSMAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'ssm:GetParameter'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+
+  CleanupAMIOnDeleteLambda:
+    DependsOn: BuildEC2Instance
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        ZipFile:
+         |
+          #!/usr/bin/env python
+          # -*- coding: utf-8 -*-
+          import json
+          import boto3
+          import urllib3
+          def deregister_ami(region, parameter_name):
+              """
+              Empties and deletes the AMI
+              :param AMI_name:
+              :return:
+              """
+              ec2_client = boto3.client('ec2', region_name=region)
+              ssm_client = boto3.client('ssm')
+
+              ami_id = None
+
+              # Work out which AMI we're deleting.
+              try:
+                response = ssm_client.get_parameter(
+                    Name=parameter_name,
+                )
+                print(response)
+                ami_id = response["Parameter"]["Value"]
+                print("Found AMI ID to delete: {} ".format(ami_id))
+
+              except Exception:
+                print("Parameter {} does not exist".format(parameter_name))
+                return
+
+              if ami_id:
+                # Now deregister the AMI.
+                try:
+                  response = ec2_client.deregister_image(
+                      ImageId=ami_id
+                  )
+                except Exception:
+                  print("Failed to deregister AMI ID: {}".format(ami_id))
+                  return
+
+                print ("Successfully deleted AMI: {}".format(ami_id))
+
+          def lambda_handler(event, context):
+              try:
+                  region = event['ResourceProperties']['Region']
+                  parameter_name = event['ResourceProperties']['SSMParameterName']
+                  if event['RequestType'] == 'Delete':
+                      deregister_ami(region, parameter_name)
+
+                  sendResponseCfn(event, context, "SUCCESS")
+              except Exception as e:
+                  print(e)
+                  sendResponseCfn(event, context, "FAILED")
+
+          def sendResponseCfn(event, context, responseStatus):
+              response_body = {'Status': responseStatus,
+                              'Reason': 'Log stream name: ' + context.log_stream_name,
+                              'PhysicalResourceId': context.log_stream_name,
+                              'StackId': event['StackId'],
+                              'RequestId': event['RequestId'],
+                              'LogicalResourceId': event['LogicalResourceId'],
+                              'Data': json.loads("{}")}
+              
+              json_response_body = json.dumps(response_body)
+              headers = {
+                  'content-type' : '',
+                  'content-length' : str(len(json_response_body))
+              }
+
+              try:
+                  http = urllib3.PoolManager()
+                  response = http.request('PUT', event['ResponseURL'], headers=headers, body=json_response_body)
+                  print("Status code:", response.status)
+
+
+              except Exception as e:
+                  print("send(..) failed executing http.request(..):", e)
+
+      Description: cleanup AMI on Delete Lambda function.
+      FunctionName: !Sub
+        - "${ShortID}-vSensor-AMI-Cleanup"
+        - ShortID: !Ref ShortID
+      Handler: index.lambda_handler
+      Role : !GetAtt CleanupAMIOnDeleteLambdaRole.Arn
+      Runtime: python3.8
+      Timeout: 60
+
+  CleanupAMIOnDelete:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt CleanupAMIOnDeleteLambda.Arn
+      Region: !Sub "${AWS::Region}"
+      SSMParameterName: !Sub
+        - "${ShortID}-vSensor-AMI"
+        - ShortID: !Ref ShortID

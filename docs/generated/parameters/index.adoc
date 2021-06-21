@@ -1,0 +1,6 @@
+
+=== Launch into a new VPC
+include::darktrace-vsensor-main.template.adoc[]
+
+=== Launch into an existing VPC
+include::darktrace-vsensor-workload.template.adoc[]

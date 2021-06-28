@@ -592,10 +592,10 @@ Outputs:
       - ","
       - - Fn::GetAtt:
           - VPCStack
-          - Outputs.PublicSubnet1AID
+          - Outputs.PublicSubnet1ID
         - Fn::GetAtt:
           - VPCStack
-          - Outputs.PublicSubnet2AID
+          - Outputs.PublicSubnet2ID
 
   LoadBalancer:
     Description: Elastic Network Load Balancer, required for osSensor clients.

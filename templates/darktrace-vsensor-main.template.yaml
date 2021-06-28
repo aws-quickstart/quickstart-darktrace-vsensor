@@ -340,7 +340,7 @@ Parameters:
     Type: String
 
 Conditions:
-  UsingDefaultBucket: !Equals 
+  UsingDefaultBucket: !Equals
     - !Ref QSS3BucketName
     - "aws-quickstart"
 

@@ -1,1 +1,3 @@
 .taskcat_overrides.*
+.taskcat/.remote_templates/
+taskcat_outputs/

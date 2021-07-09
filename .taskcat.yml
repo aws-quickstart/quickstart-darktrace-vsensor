@@ -11,9 +11,9 @@ project:
     RemoteAccessCIDR: "127.0.0.1/32"
     VSensorApplianceHostname: "https://darktrace.com"
     VSensorAppliancePushtoken: "aws-quickstart-pushtoken:12345678abcdefg"
-    VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
+    VSensorUpdatekey: "override"
     VSensorKeyPairName: $[taskcat_getkeypair]
-  template: ./templates/darktrace-vsensor-main.template.yaml
+  template: templates/darktrace-vsensor-main.template.yaml
 tests:
   vsensor:
     regions:

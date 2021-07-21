@@ -25,7 +25,7 @@ Metadata:
         - BastionKeyPairName
         - BastionAMIOS
     - Label:
-        default: Darktrace appliance cnfiguration
+        default: Darktrace appliance configuration
       Parameters:
         - VSensorApplianceHostname
         - VSensorAppliancePort
@@ -41,7 +41,7 @@ Metadata:
         - VSensorMaxSizeASG
         - VSensorOsSensorHMAC
     - Label:
-        default: VPC traffic mirror configuration
+        default: VPC Traffic Mirror configuration
       Parameters:
         - VSensorTrafficMirrorRuleNumber
         - VSensorTrafficMirrorSourceCIDR
@@ -75,21 +75,21 @@ Metadata:
       PublicSubnet2CIDR:
         default: Public subnet 2 CIDR
       RemoteAccessCIDR:
-        default: Allowed bastion external access CIDR
+        default: Bastion host CIDR
 
       # Bastion Config
 
       BastionInstanceType:
-        default: Bastion instance type
+        default: Bastion host instance type
       BastionKeyPairName:
         default: Key pair name
       BastionAMIOS:
-        default: Bastion AMI operating system
+        default: Bastion host AMI operating system
 
       # Appliance Config
 
       VSensorApplianceHostname:
-        default: Appliance hostname  
+        default: Appliance host name  
       VSensorAppliancePort:
         default: Appliance port
       VSensorAppliancePushtoken:
@@ -100,7 +100,7 @@ Metadata:
       VSensorInstanceType:
         default: EC2 instance type
       VSensorKeyPairName:
-        default: Key pair name
+        default: EC2 key pair name
       VSensorUpdatekey:
         default: Update key
       VSensorDesiredCapacityASG:
@@ -115,14 +115,14 @@ Metadata:
       # Logs and PCAPs Config
 
       VSensorLogGroupRetention:
-        default: CloudWatch Log retention (days)
+        default: CloudWatch logs retention (days)
       VSensorLifecycleS3BucketDays:
-        default: PCAP storage lifecycle (days)
+        default: Captured packets storage retention (days)
 
       # Traffic Mirror Config
       
       VSensorTrafficMirrorRuleNumber:
-        default: Rule number for Traffic Mirror rule
+        default: Traffic Mirror rule number
       VSensorTrafficMirrorSourceCIDR:
         default: Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
       VSensorTrafficMirrorDestCIDR:
@@ -133,18 +133,18 @@ Metadata:
       QSS3BucketName:
         default: Quick Start S3 bucket name
       QSS3BucketRegion:
-        default: Quick Start S3 bucket region
+        default: Quick Start S3 bucket Region
       QSS3KeyPrefix:
         default: Quick Start S3 key prefix
       ShortID:
-        default: Quick Start Unique Run ID (12 chars or less)
+        default: Quick Start unique run ID (12 characters or less)
 
 Parameters:
   # Appliance Config
 
   VSensorApplianceHostname:
     Type: String
-    Description: The Darktrace appliance to which the vSensor should connect.
+    Description: Host name of the Darktrace appliance.
   VSensorAppliancePort:
     Type: Number
     Description: Connection port between vSensor and the Darktrace appliance.
@@ -175,15 +175,15 @@ Parameters:
     Default: 'XXXXXX:XXXX'
   VSensorDesiredCapacityASG:
     Type: Number
-    Description: Desired number of vSensor instances within the auto-scaling group.
+    Description: Desired number of vSensor instances within the Auto-Scaling group.
     Default: 1
   VSensorMinSizeASG:
     Type: String
-    Description: Minimum number of vSensor instances within the auto-scaling group.
+    Description: Minimum number of vSensor instances within the Auto-Scaling group.
     Default: 1
   VSensorMaxSizeASG:
     Type: Number
-    Description: Maximum number of vSensor instances within the auto-scaling group.
+    Description: Maximum number of vSensor instances within the Auto-Scaling group.
     Default: 5
   VSensorOsSensorHMAC:
     Type: String

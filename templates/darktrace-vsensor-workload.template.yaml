@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: This template deploys an auto-scaling vSensor cluster for monitoring existing VPC subnets. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.(qs-1rmjte85a)
+Description: This template deploys a scaling vSensor cluster for monitoring existing VPC subnets. **WARNING** You will be billed for AWS resources you use if you create a stack from this template. (qs-1rmjte82s)
 
 Metadata:
   QuickStartDocumentation:
@@ -8,13 +8,13 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Appliance Configuration
+          default: Darktrace appliance configuration
         Parameters:
           - ApplianceHostname
           - AppliancePort
           - AppliancePushtoken
       - Label:
-          default: vSensor Configuration
+          default: Darktrace vSensor configuration
         Parameters:
           - InstanceType
           - KeyPairName
@@ -25,25 +25,25 @@ Metadata:
           - MaxSizeASG
           - osSensorHMAC
       - Label:
-          default: Networking Configuration
+          default: Network configuration
         Parameters:
           - DeploymentVPC
           - VpcCIDRBlock
           - SshCIDRBlock
           - Subnets
       - Label:
-          default: Traffic Mirror Configuration
+          default: VPC Traffic Mirror configuration
         Parameters:
           - TrafficMirrorRuleNumber
           - TrafficMirrorSourceCIDR
           - TrafficMirrorDestCIDR
       - Label:
-          default: Logs & PCAPS Configuration
+          default: Logs & PCAP configuration
         Parameters:
           - LogGroupRetention
           - LifecycleS3BucketDays
       - Label:
-          default: "Quickstart Config"
+          default: Quick Start configuration
         Parameters:
           - QSS3BucketName
           - QSS3BucketRegion
@@ -54,20 +54,20 @@ Metadata:
     ParameterLabels:
       # Appliance Config
       ApplianceHostname:
-        default: Appliance Hostname  
+        default: Appliance host name  
       AppliancePort:
-        default: Appliance Port
+        default: Appliance port
       AppliancePushtoken:
-        default: Appliance Push Token
+        default: Appliance push token
       # vSensor Config
       InstanceType:
-        default: EC2 Instance Type
+        default: EC2 instance type
       KeyPairName:
-        default: EC2 Key-pair Name
+        default: EC2 key pair Name
       InstanceSecurityGroups:
-        default: Security Groups
+        default: Security groups
       VsensorUpdatekey:
-        default: Update Key
+        default: Update key
       DesiredCapacityASG:
         default: Desired vSensor instance capacity
       MinSizeASG:
@@ -80,54 +80,54 @@ Metadata:
       DeploymentVPC:
         default: Deployment VPC
       VpcCIDRBlock:
-        default: VPC CDIR Block
+        default: VPC CIDR block
       SshCIDRBlock:
-        default: SSH CDIR Block
+        default: SSH CIDR block
       Subnets:
         default: Subnets
       # Traffic Mirror Config
       TrafficMirrorRuleNumber:
-        default: Rule number for Traffic Mirror Rule
+        default: Traffic Mirror rule number
       TrafficMirrorSourceCIDR:
         default: Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
       TrafficMirrorDestCIDR:
-        default: Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
+        default: Destination traffic CIDR to filter (0.0.0.0/0 for all traffic)
       # Logs and PCAPs Config
       LogGroupRetention:
-        default: CloudWatch Log Retention (Days)
+        default: CloudWatch logs retention (days)
       LifecycleS3BucketDays:
-        default: PCAP Storage Lifecycle (Days)
+        default: Captured packets storage retention (days)
       # Quickstart Config
       QSS3BucketName:
         default: Quick Start S3 bucket name
       QSS3BucketRegion:
-        default: Quick Start S3 bucket region
+        default: Quick Start S3 bucket Region
       QSS3KeyPrefix:
-        default: Quick Start S3 Key Prefix
+        default: Quick Start S3 key prefix
       ShortID:
-        default: "Quickstart Short Unique ID"
+        default: Quick Start unique run ID (12 characters or less)
 
 Parameters:
   # Appliance Config
 
   ApplianceHostname:
     Type: String
-    Description: Which Appliance should this vSensor connect to?
+    Description: Host name of the Darktrace appliance.
   AppliancePort:
     Type: Number
-    Description: Which port should the vSensor connect to the Appliance on?
+    Description: Connection port between vSensor and the Darktrace appliance.
     Default: 443
   AppliancePushtoken:
     AllowedPattern: ^[a-zA-Z0-9-]{4,64}:[a-zA-Z0-9]{5,63}$
     Type: String
-    Description: Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
+    Description: Push token to authenticate with the appliance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
 
   # vSensor Config
 
   InstanceType:
     Default: t3.medium
     Type: String
-    Description: EC2 instance type. Default is t3.medium
+    Description: EC2 instance type. Default is `t3.medium`.
     AllowedValues:
       - t3.medium
       - m5.large
@@ -135,7 +135,7 @@ Parameters:
       - m5.4xlarge
   KeyPairName:
     Type: 'AWS::EC2::KeyPair::KeyName'
-    Description: Which EC2 Key-pair should be used to connect to the vSensor?
+    Description: EC2 Key-pair to use to connect to the vSensor.
   InstanceSecurityGroups:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: Which AWS Security Group IDs would you like to apply for the vSensor? Note that a basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.

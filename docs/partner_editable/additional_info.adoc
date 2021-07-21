@@ -37,12 +37,12 @@ Once EC2 Instances have been configured for Traffic Mirroring above, these insta
 == Security
 // Provide post-deployment best practices for using the technology on AWS, including considerations such as migrating data, backups, ensuring high performance, high availability, etc. Link to software documentation for detailed information.
 
-==== Network Security
+=== Network Security
 The default network security setup of this solution follows AWS security best practices. The provisioned {partner-product-name} instances are deployed in private subnets and can only be accessed via SSH via the Bastion.
 
 For existing VPC deployments, it is important for the *Security Groups* defined by the customer allow only required access for SSH from trusted sources. It is not recommended to allow direct SSH access to vSensors from the internet.
 
-==== OS Security
+=== OS Security
 
 To gain root access to your vSensor instances you may use `ubuntu` user and then sudo to root. The key-pair provided during deployment will be required to access the `ec2-user` of the Bastion and `ubuntu` user of vSensors.
 

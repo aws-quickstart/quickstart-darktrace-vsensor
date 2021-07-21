@@ -1,5 +1,5 @@
 
-.Network Configuration
+.Network configuration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
 |Parameter label (name) |Default value|Description|Availability Zones
@@ -11,7 +11,7 @@
 (`PublicSubnet2CIDR`)|`10.0.144.0/20`|CIDR block for the public (DMZ) subnet 2 located in Availability Zone 2.|Allowed bastion external access CIDR
 (`RemoteAccessCIDR`)|`**__Requires input__**`|CIDR IP range that is permitted to access the bastions. We recommend that you set this value to a trusted IP range.
 |===
-.Bastion Configuration
+.Bastion configuration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
 |Parameter label (name) |Default value|Description|Bastion instance type
@@ -19,47 +19,47 @@
 (`BastionKeyPairName`)|`**__Requires input__**`|Name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.|Bastion AMI operating system
 (`BastionAMIOS`)|`Amazon-Linux2-HVM`|Linux distribution for the AMI to be used for the bastion instances.
 |===
-.Appliance Configuration
+.Darktrace appliance cnfiguration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
-|Parameter label (name) |Default value|Description|Appliance Hostname
-(`VSensorApplianceHostname`)|`**__Requires input__**`|Which Appliance should this vSensor connect to?|Appliance Port
-(`VSensorAppliancePort`)|`443`|Which port should the vSensor connect to the Appliance on?|Appliance Push Token
-(`VSensorAppliancePushtoken`)|`**__Requires input__**`|Push token to authenticate with the Appliance. Generate this from the Appliance's Config menu.
+|Parameter label (name) |Default value|Description|Appliance hostname
+(`VSensorApplianceHostname`)|`**__Requires input__**`|The Darktrace appliance to which the vSensor should connect.|Appliance port
+(`VSensorAppliancePort`)|`443`|Connection port between vSensor and the Darktrace appliance.|Appliance push token
+(`VSensorAppliancePushtoken`)|`**__Requires input__**`|Push token to authenticate with the appliance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
 |===
-.vSensor Configuration
+.Darktrace vSensor configuration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
-|Parameter label (name) |Default value|Description|EC2 Instance Type
+|Parameter label (name) |Default value|Description|EC2 instance type
 (`VSensorInstanceType`)|`t3.medium`|EC2 instance type. Default is t3.medium|Key pair name
-(`VSensorKeyPairName`)|`**__Requires input__**`|Which EC2 Key-pair should be used to connect to the vSensor?|Update Key
+(`VSensorKeyPairName`)|`**__Requires input__**`|Which EC2 Key-pair should be used to connect to the vSensor?|Update key
 (`VSensorUpdatekey`)|`XXXXXX:XXXX`|Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)|Desired vSensor instance capacity
 (`VSensorDesiredCapacityASG`)|`1`|Desired number of vSensor instances within the auto-scaling group.|Minimum vSensor instance capacity
 (`VSensorMinSizeASG`)|`1`|Minimum number of vSensor instances within the auto-scaling group.|Maximum vSensor instance capacity
 (`VSensorMaxSizeASG`)|`5`|Maximum number of vSensor instances within the auto-scaling group.|osSensor HMAC Token
 (`VSensorOsSensorHMAC`)|`**__Blank string__**`|HMAC Token to authenticate osSensors with the vSensor.
 |===
-.Traffic Mirroring Configuration
+.VPC traffic mirror configuration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
-|Parameter label (name) |Default value|Description|Rule number for Traffic Mirror Rule
+|Parameter label (name) |Default value|Description|Rule number for Traffic Mirror rule
 (`VSensorTrafficMirrorRuleNumber`)|`100`|What number for the traffic mirror filter rule|Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
-(`VSensorTrafficMirrorSourceCIDR`)|`0.0.0.0/0`|Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)|Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
+(`VSensorTrafficMirrorSourceCIDR`)|`0.0.0.0/0`|Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)|Destination traffic CIDR to filter (0.0.0.0/0 for all traffic)
 (`VSensorTrafficMirrorDestCIDR`)|`0.0.0.0/0`|Dest CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
 |===
-.Logs & PCAPS Configuration
+.Logs & PCAP configuration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
-|Parameter label (name) |Default value|Description|CloudWatch Log Retention (Days)
-(`VSensorLogGroupRetention`)|`30`|Select the number of days logs should be kept in CloudWatch|PCAP Storage Lifecycle (Days)
+|Parameter label (name) |Default value|Description|CloudWatch Log retention (days)
+(`VSensorLogGroupRetention`)|`30`|Select the number of days logs should be kept in CloudWatch|PCAP storage lifecycle (days)
 (`VSensorLifecycleS3BucketDays`)|`7`|Enter the number of days Packet Captures (PCAPs) should be kept for in S3
 |===
 .AWS Quick Start configuration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
 |Parameter label (name) |Default value|Description|Quick Start S3 bucket name
-(`QSS3BucketName`)|`aws-quickstart`|S3 bucket name for the Quick Start assets. This string can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).|Quick Start S3 bucket region
-(`QSS3BucketRegion`)|`eu-east-1`|The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.|Quick Start S3 Key Prefix
-(`QSS3KeyPrefix`)|`quickstart-darktrace-vsensor/`|S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).|Quick Start Unique Run ID (12 chars or less)
+(`QSS3BucketName`)|`aws-quickstart`|Name of the S3 bucket for your copy of the Quick Start assets. Keep the default name unless you are customizing the template. Changing the name updates code references to point to a new Quick Start location. This name can include numbers, lowercase letters, uppercase letters, and hyphens, but do not start or end with a hyphen (-). See https://aws-quickstart.github.io/option1.html.|Quick Start S3 bucket region
+(`QSS3BucketRegion`)|`us-east-1`|AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. Keep the default Region unless you are customizing the template. Changing this Region updates code references to point to a new Quick Start location. When using your own bucket, specify the Region. See https://aws-quickstart.github.io/option1.html.|Quick Start S3 key prefix
+(`QSS3KeyPrefix`)|`quickstart-darktrace-vsensor/`|S3 key prefix that is used to simulate a directory for your copy of the Quick Start assets. Keep the default prefix unless you are customizing the template. Changing this prefix updates code references to point to a new Quick Start location. This prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slashes (/). End with a forward slash. See https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html and https://aws-quickstart.github.io/option1.html.|Quick Start Unique Run ID (12 chars or less)
 (`ShortID`)|`**__Blank string__**`|QuickStart short unique ID, used to identify resources from other installations of this Quickstart. If left empty, a random string is generated.
 |===

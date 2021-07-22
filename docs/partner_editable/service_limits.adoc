@@ -9,10 +9,10 @@
 |Subnets |4
 |Elastic IP addresses |3
 |S3 Buckets |1
-|Lambdas   |4
-|IAM roles |7
+|AWS Lambdas   |4
+|AWS Identity and Access Management (IAM) roles |7
 |Auto Scaling groups |2
 |Elastic Network Load Balancers |1
-|t3.micro Instances (Bastion) |1
-|vSensor Instances (Size Configurable)   |1+
+|t3.micro instances (bastion hosts) |1
+|vSensor instances (size-configurable)   |1+
 |===

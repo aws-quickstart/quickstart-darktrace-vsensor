@@ -2,14 +2,15 @@
 
 ==== Prepare your Darktrace Deployment
 
-The vSensor deployment will use *Push Token Mode* to connect back to the Master Appliance. Be prepared to allow network access from your existing Master Appliance to your new vSensor deployment. This may require firewall configurations.
+Register a new push token to enable connection between vSensor probes and an existing Darktrace appliance. All of the vSensor instances in this deployment share the same push token.
+NOTE: Darktrace cloud instances are already configured to allow push token access.
 
-NOTE: *Darktrace Cloud Masters* are already configured to allow this access.
+. Log into the Darktrace appliance user interface.
+. Choose the *System Config* page from the main menu.
+. In the *Push Probe Tokens* section, enter a label for the vSensor Deployment. To change the vSensor label later, you must redo the steps to generate a new token.
+. Choose *Add*. A token is generated in the form of `[label:string]`. 
+. Record the token, as it only displays once. You must enter the token in the *Appliance push token* parameter field during Quick Start deployment.
 
-You will need to register a new *Push Token* to connect the vSensors to the Master. All vSensors in this Deployment will share this token.
+If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways after deployment. For more information, see link:#post-deployment-steps[Post deployment steps], later in this guide.
 
-    * Log into the Darktrace Master instance UI and navigate to the _System Config_ page from the main menu. Locate the _Push Probe Tokens_ section.
 
-    * Enter a label for the vSensor Deployment and click _Add_ - a token will generate in the form of _[label:string]_. This token will be shown only once, please note it down for the deployment.
-
-    * The vSensor label is part of the token - to change the label, the token must be fully regenerated.

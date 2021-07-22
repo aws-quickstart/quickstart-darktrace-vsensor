@@ -38,7 +38,7 @@ Metadata:
           - TrafficMirrorSourceCIDR
           - TrafficMirrorDestCIDR
       - Label:
-          default: Logs & PCAP configuration
+          default: Logs and captured packet retention
         Parameters:
           - LogGroupRetention
           - LifecycleS3BucketDays
@@ -135,45 +135,45 @@ Parameters:
       - m5.4xlarge
   KeyPairName:
     Type: 'AWS::EC2::KeyPair::KeyName'
-    Description: EC2 Key-pair to use to connect to the vSensor.
+    Description: EC2 key pair to use to connect to vSensor.
   InstanceSecurityGroups:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
-    Description: Which AWS Security Group IDs would you like to apply for the vSensor? Note that a basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.
+    Description: Darktrace vSensor security group IDs. A basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.
   VsensorUpdatekey:
     AllowedPattern: ^[a-zA-Z0-9%\.]+:[a-zA-Z0-9]+$
     Type: String
-    Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
+    Description: Darktrace update key. If you don't have one, contact your Darktrace representative.
     Default: 'XXXXXX:XXXX'
   DesiredCapacityASG:
     Type: Number
-    Description: Desired number of vSensor instances within the auto-scaling group.
+    Description: Desired number of vSensor instances in the Auto-Scaling group.
     Default: 1
   MinSizeASG:
     Type: String
-    Description: Minimum number of vSensor instances within the auto-scaling group.
+    Description: Minimum number of vSensor instances in the Auto-Scaling group.
     Default: 1
   MaxSizeASG:
     Type: Number
-    Description: Maximum number of vSensor instances within the auto-scaling group.
+    Description: Maximum number of vSensor instances in the Auto-Scaling group.
     Default: 5
   osSensorHMAC:
     Type: String
-    Description: HMAC Token to authenticate osSensors with the vSensor.
+    Description: Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor.
     Default: ""
 
   # Networking Config
 
   DeploymentVPC:
     Type: 'AWS::EC2::VPC::Id'
-    Description: 'VPC of target deployment'
+    Description: VPC of target deployment.
   VpcCIDRBlock:
     Type: String
     Default: '172.16.0.0/12'
-    Description: 'CIDR Block of VPC' # TODO: Do we need this? We should find it from DeploymentVPC.
+    Description: VPC CIDR block. # TODO: Do we need this? We should find it from DeploymentVPC.
   SshCIDRBlock:
     Type: String
     Default: '172.16.0.0/12'
-    Description: 'CIDR Block of allowed SSH Access to vSensors.'
+    Description: Allowed CIDR block for SSH (Secure Shell) access to vSensor.
   Subnets:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: >-
@@ -184,16 +184,16 @@ Parameters:
 
   TrafficMirrorRuleNumber:
     Type: Number
-    Description: What number for the traffic mirror filter rule
+    Description: Enter a priority to assign to the rule.
     Default: 100
   TrafficMirrorSourceCIDR:
     Type: String
     Default: '0.0.0.0/0'
-    Description: Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
+    Description: Source CIDR for the Traffic Mirror filter. Enter `0.0.0.0/0` for all traffic.
   TrafficMirrorDestCIDR:
     Type: String
     Default: '0.0.0.0/0'
-    Description: Dest CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)
+    Description: Destination CIDR for the Traffic Mirror filter. Enter `0.0.0.0/0` for all traffic.
   
   # Logs & PCAPs Config
 
@@ -217,40 +217,56 @@ Parameters:
       - 731
       - 1827
       - 3653
-    Description: Select the number of days logs should be kept in CloudWatch
+    Description: Number of days to retain Cloudwatch logs.
     Default: 30
   LifecycleS3BucketDays:
     Type: Number
-    Description: Enter the number of days Packet Captures (PCAPs) should be kept for in S3
+    Description: Number of days to retain captured packets in Amazon S3.
     Default: 7
   # Quickstart Config
   QSS3BucketName:
-    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
-    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
-      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
-      (-).
+    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      The Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a 
+      hyphen (-).
     Default: aws-quickstart
-    Description: S3 bucket name for the Quick Start assets. This string can include
-      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
-      or end with a hyphen (-).
+    Description:
+      Name of the S3 bucket for your copy of the Quick Start assets. 
+      Keep the default name unless you are customizing the template. 
+      Changing the name updates code references to point to a new Quick 
+      Start location. This name can include numbers, lowercase letters, 
+      uppercase letters, and hyphens, but do not start or end with a hyphen (-). 
+      See https://aws-quickstart.github.io/option1.html.
     Type: String
   QSS3BucketRegion:
-    Default: 'eu-east-1'
-    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Default: 'us-east-1'
+    Description: 'AWS Region where the Quick Start S3 bucket (QSS3BucketName) is 
+    hosted. Keep the default Region unless you are customizing the template. 
+    Changing this Region updates code references to point to a new Quick Start location. 
+    When using your own bucket, specify the Region. 
+    See https://aws-quickstart.github.io/option1.html.'
     Type: String
   QSS3KeyPrefix:
-    AllowedPattern: ^[0-9a-zA-Z-/]*$
-    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
-      uppercase letters, hyphens (-), and forward slash (/).
+    AllowedPattern: '^[0-9a-zA-Z-/]*$'
+    ConstraintDescription:
+      The Quick Start S3 key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slashes (/). The prefix should
+      end with a forward slash (/).
     Default: quickstart-darktrace-vsensor/
-    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
-      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
-      forward slash (/).
+    Description:
+      S3 key prefix that is used to simulate a directory for your copy of the 
+      Quick Start assets. Keep the default prefix unless you are customizing 
+      the template. Changing this prefix updates code references to point to 
+      a new Quick Start location. This prefix can include numbers, lowercase 
+      letters, uppercase letters, hyphens (-), and forward slashes (/). End with 
+      a forward slash. See https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html 
+      and https://aws-quickstart.github.io/option1.html.
     Type: String
   ShortID:
     AllowedPattern: ^[0-9a-z-]{0,12}$
     ConstraintDescription: Unique ID prefix can include up to 12 characters, including numbers, lowercase letters, hyphens (-).
-    Description: "QuickStart short unique ID, used to identify resources from other installations of this Quickstart. If left empty, a random string is generated."
+    Description: Quick Start short unique ID used to identify resources from other installations of this Quick Start. If left empty, a random string is generated.
     Default: ""
     Type: String
 
@@ -342,7 +358,7 @@ Resources:
         !Sub
           - "${ShortID}-vSensor-AMI"
           - ShortID: !GetAtt ShortIDRand.IDString
-      Description: "The AMI ID of the autogenerated Darktrace vSensor software AMI image."
+      Description: The AMI ID of the autogenerated Darktrace vSensor software AMI image.
       Type: String
       Value: "NOT_YET_SET"
 
@@ -765,7 +781,7 @@ Resources:
   TrafficMirrorFilter:
     Type: 'AWS::EC2::TrafficMirrorFilter'
     Properties:
-      Description: Mirror filter for autoscaling vsensor, allow all from given CIDR range
+      Description: Mirror filter for scaling vSensor, allow all from given CIDR range
       Tags:
         - Key: "Name"
           Value:
@@ -1152,17 +1168,21 @@ Outputs:
     Value: !Ref PCAPS
 
   LoadBalancer:
-    Description: Elastic Network Load Balancer, required for osSensor clients.
+    Description: Network Load Balancer, required for osSensor clients.
     Value: !Ref LoadBalancer
 
   LoadBalancerDNS:
-    Description: DNS name of the Elastic Network Load Balancer, required for osSensor clients.
+    Description: DNS name of the Network Load Balancer, required for osSensor clients.
     Value: !GetAtt LoadBalancer.DNSName
 
   TrafficMirrorFilterId:
-    Description: ID of the traffic mirror filter generated for Traffic Mirroring Sessions.
+    Description: ID of the Traffic Mirror filter generated for Traffic Mirror sessions.
     Value: !Ref TrafficMirrorFilter
 
   TrafficMirrorTargetId:
-    Description: ID of the traffic mirror target generated for Traffic Mirroring Sessions.
+    Description: ID of the Traffic Mirror target generated for Traffic Mirror sessions.
     Value: !Ref TrafficMirrorTarget
+  
+  Postdeployment:
+    Description: See the deployment guide for post-deployment steps.
+    Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.sortDate&quickstart-all.sort-order=desc&awsm.page-quickstart-all=5

@@ -3,27 +3,18 @@
 
 == Post deployment steps
 
-=== Configuring Networking
+=== Configure networking
 
-As specified earlier, if your Master Appliance is behind a firewall, access must now be allowed.
+If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console]. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.
+TODO: I don't see *NAT Gateway Elastic IPs* in cfn_outputs.png. I don't need a new screen shot, just confirm that if I say "For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the AWS CloudFormation console," this is correct.
 
-* If the New VPC deployment was chosen, access to the Master from the *NAT Gateway Elastic IPs* must be granted. These can be found in the *Outputs* as shown above.
+=== Configure traffic mirroring
 
-* If the Existing VPC deployment was chosen, the IPs of the existing NAT Gateways for the subnets used must be allowed inbound to the Master.
+VPC Traffic Mirroring is only supported on AWS Nitro-based EC2 instance types and some non-Nitro instance types. For more information, see https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types[Amazon VPC Traffic Mirroring is now supported on select non-Nitro instance types]. 
 
-=== Configuring Mirroring of Instances
+To monitor EC2 instance types that do not support VPC Traffic Mirroring, configure them with Darktrace osSensors. When doing this, use the DNS name of the Network Load Balancer on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[CloudFormation console]. For more information about configuring osSensors, visit the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
 
-NOTE: This method is only compatible with new nitro generation AWS EC2 instances (c5/m5/r5 or t3) and select older instances. Older instances like t2.micro do not allow traffic mirroring and will require osSensors for traffic monitoring. Please see the relevant https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types[AWS documentation ^] for more information.
-
-If you wish to automate adding existing EC2 instances to your new deployment, your Darktrace representative can provide scripts and guidance to perform this.
-
-To add EC2 instances for Traffic Mirroring, see https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html[this guide^]. The Traffic Mirror Target and Filter IDs are provided in the *Output* section (shown above).
-
-=== Configuring osSensors
-
-To configure osSensors to be monitored by this Deployment, please use the Public IP / DNS hostname of the Elastic Network Load Balancer. These are shown in the *Outputs* section, as shown above.
-
-NOTE: Guides for configuring osSensors are available on the Darktrace Customer Portal.
+To add your existing EC2 instances to be mirrored and monitored, configure a traffic mirror session. For more information, see https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html[Traffic mirror sessions]. When doing this, use the traffic mirror target and filter IDs on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console]. You can automate the process of adding your existing EC2 instances to this deployment. For more information, contact your Darktrace representative for scripts and guidance to do this.
 
 === Test the deployment
 

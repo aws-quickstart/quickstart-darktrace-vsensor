@@ -47,7 +47,7 @@ Metadata:
         - VSensorTrafficMirrorSourceCIDR
         - VSensorTrafficMirrorDestCIDR
     - Label:
-        default: Logs & PCAP configuration
+        default: Logs and captured packet retention
       Parameters:
         - VSensorLogGroupRetention
         - VSensorLifecycleS3BucketDays
@@ -167,7 +167,7 @@ Parameters:
       - m5.4xlarge
   VSensorKeyPairName:
     Type: 'AWS::EC2::KeyPair::KeyName'
-    Description: EC2 Key-pair to use to connect to the vSensor.
+    Description: EC2 key pair to use to connect to vSensor.
   VSensorUpdatekey:
     AllowedPattern: ^[a-zA-Z0-9%\.]+:[a-zA-Z0-9]+$
     Type: String
@@ -175,15 +175,15 @@ Parameters:
     Default: 'XXXXXX:XXXX'
   VSensorDesiredCapacityASG:
     Type: Number
-    Description: Desired number of vSensor instances within the Auto-Scaling group.
+    Description: Desired number of vSensor instances in the Auto-Scaling group.
     Default: 1
   VSensorMinSizeASG:
     Type: String
-    Description: Minimum number of vSensor instances within the Auto-Scaling group.
+    Description: Minimum number of vSensor instances in the Auto-Scaling group.
     Default: 1
   VSensorMaxSizeASG:
     Type: Number
-    Description: Maximum number of vSensor instances within the Auto-Scaling group.
+    Description: Maximum number of vSensor instances in the Auto-Scaling group.
     Default: 5
   VSensorOsSensorHMAC:
     Type: String
@@ -243,7 +243,7 @@ Parameters:
       - t3.xlarge
       - t3.2xlarge
     Default: t3.micro
-    Description: Amazon EC2 instance type for the bastion host instances.
+    Description: Amazon EC2 instance type for the bastion hosts.
     Type: String
   BastionKeyPairName:
     Description: Name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.
@@ -255,7 +255,7 @@ Parameters:
       - Ubuntu-Server-20.04-LTS-HVM
       - SUSE-SLES-15-HVM
     Default: Amazon-Linux2-HVM
-    Description: Linux distribution for the AMI to be used for the bastion host instances.
+    Description: Linux distribution for the Amazon Machine Image (AMI) used for the bastion host instances.
     Type: String
 
   # Traffic Mirroring Config
@@ -609,35 +609,35 @@ Outputs:
           - Outputs.PublicSubnet2AID
 
   LoadBalancer:
-    Description: Elastic Network Load Balancer, required for osSensor clients.
+    Description: Network Load Balancer, required for osSensor clients.
     Value:
       Fn::GetAtt:
       - VSensorStack
       - Outputs.LoadBalancer
 
   LoadBalancerDNS:
-    Description: DNS name of the Elastic Network Load Balancer, required for osSensor clients.
+    Description: DNS name of the Network Load Balancer, required for osSensor clients.
     Value:
       Fn::GetAtt:
       - VSensorStack
       - Outputs.LoadBalancerDNS
 
   TrafficMirrorFilterId:
-    Description: ID of the traffic mirror filter generated for Traffic Mirroring sessions.
+    Description: ID of the Traffic Mirror filter generated for Traffic Mirror sessions.
     Value:
       Fn::GetAtt:
       - VSensorStack
       - Outputs.TrafficMirrorFilterId
 
   TrafficMirrorTargetId:
-    Description: ID of the traffic mirror target generated for Traffic Mirroring sessions.
+    Description: ID of the Traffic Mirror target generated for Traffic Mirror sessions.
     Value: 
       Fn::GetAtt:
       - VSensorStack
       - Outputs.TrafficMirrorTargetId
 
   BucketName:
-    Description: Name of the captured packets S3 bucket.
+    Description: Name of the PCAP S3 bucket.
     Value:
       Fn::GetAtt:
       - VSensorStack

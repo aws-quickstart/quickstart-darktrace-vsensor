@@ -4,11 +4,9 @@
 
 This Quick Start deploys Darktrace vSensor virtual threat detection on the Amazon Web Services (AWS) Cloud. Instead of relying on flow logs, Darktrace's artificial intelligence system analyzes raw data from mirrored virtual private cloud (VPC) traffic to learn to identify threats. 
 
-This deployment configures AWS VPC Traffic Mirroring to copy traffic from and to AWS Nitro-based Amazon Elastic Compute Cloud (Amazon EC2) instances you want to monitor. A Network Load Balancer distributes mirrored traffic to Darktrace vSensors installed on EC2 instances in the private subnets. The deployment also supports sending data to vSensors from Darktrace osSensors you have installed on virtual machines, containerized applications, and non-Nitro EC2 instance types. Darktrace osSensors can be installed on devices running Windows, supported Linux distributions, and any Linux environment running the Docker engine.
+This deployment configures AWS VPC Traffic Mirroring to copy traffic from and to AWS Nitro-based Amazon EC2 instances. A Network Load Balancer distributes mirrored traffic to Darktrace vSensors installed on EC2 instances in the private subnets. Darktrace vSensor extracts metadata from captured packets of VPC traffic and stores it in an Amazon Simple Storage Service (Amazon S3) bucket. A Darktrace on-premises or cloud appliance performs threat analysis on this metadata using Darktrace's Enterprise Immune System. In this way, Darktrace builds metrics it uses to distinguish malicious activity in VPC traffic from normal traffic. 
 
-Darktrace vSensor extracts metadata from captured packets of VPC traffic and stores it in an Amazon Simple Storage Service (Amazon S3) bucket. A Darktrace on-premises or cloud appliance performs threat analysis on this metadata using Darktrace's Enterprise Immune System. In this way, Darktrace builds metrics it uses to distinguish malicious activity in VPC traffic from normal traffic.
-
-Darktrace vSensors support syslog to https://www.darktrace.com/en/integrations/[integrate^] with third-party security information and event management tools.
+The deployment also supports sending data to vSensors from Darktrace osSensors you have installed on virtual machines, containerized applications, and non-Nitro EC2 instance types. Darktrace osSensors can be installed on devices running Windows, supported Linux distributions, and any Linux environment running the Docker engine. Darktrace vSensors support syslog to https://www.darktrace.com/en/integrations/[integrate^] with third-party security information and event management tools.
 
 
 === High Availability on AWS

@@ -5,58 +5,55 @@
 
 === Configure networking
 
-If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console]. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.
-TODO: I don't see *NAT Gateway Elastic IPs* in cfn_outputs.png. I don't need a new screen shot, just confirm that if I say "For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the AWS CloudFormation console," this is correct.
+If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.
+
+//TODO: I don't see *NAT Gateway Elastic IPs* in cfn_outputs.png. I don't need a new screen shot, just confirm that if I say "For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the AWS CloudFormation console," this is correct.
 
 === Configure traffic mirroring
 
-VPC Traffic Mirroring is only supported on AWS Nitro-based EC2 instance types and some non-Nitro instance types. For more information, see https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types[Amazon VPC Traffic Mirroring is now supported on select non-Nitro instance types]. 
+VPC Traffic Mirroring is only supported on AWS Nitro-based EC2 instance types and some non-Nitro instance types. For more information, see https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types[Amazon VPC Traffic Mirroring is now supported on select non-Nitro instance types^]. 
 
-To monitor EC2 instance types that do not support VPC Traffic Mirroring, configure them with Darktrace osSensors. When doing this, use the DNS name of the Network Load Balancer on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[CloudFormation console]. For more information about configuring osSensors, visit the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
+To monitor EC2 instance types that do not support VPC Traffic Mirroring, configure them with Darktrace osSensors. When doing this, use the DNS name of the Network Load Balancer on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[CloudFormation console^]. For more information about configuring osSensors, visit the https://customerportal.darktrace.com/login[Darktrace Customer Portal^].
 
-To add your existing EC2 instances to be mirrored and monitored, configure a traffic mirror session. For more information, see https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html[Traffic mirror sessions]. When doing this, use the traffic mirror target and filter IDs on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console]. You can automate the process of adding your existing EC2 instances to this deployment. For more information, contact your Darktrace representative for scripts and guidance to do this.
+To add your existing EC2 instances to be mirrored and monitored, configure a traffic mirror session. For more information, see https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html[Traffic mirror sessions^]. When doing this, use the traffic mirror target and filter IDs on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. You can automate the process of adding your existing EC2 instances to this deployment. For more information, contact your Darktrace representative for scripts and guidance to do this.
 
 === Test the deployment
 
-You must enter an update key and push token correctly during deployment for the Quick Start to launch successfully. After adding the EC2 instances you want to monitor to traffic mirror sessions, they should display in the https://www.darktrace.com/en/threat-visualization/[Darktrace Threat Visualizer].
+After deployment, verify that all vSensors are listed in the *Probes* section of the *System Config* screen in the Darktrace console. After adding the EC2 instances that you want to monitor, verify that they display in the https://www.darktrace.com/en/threat-visualization/[Darktrace Threat Visualizer^].
 
-Once the deployment has completed, the Master UI _System Config_ / _Push Tokens_ section should display the expected number of probes connected.
-TODO: The number of probes should equal the 2 vSensor appliances plus any os Sensors the customer installs manually? 
+//TODO: Please review wording here^.
 
 
 == Security
 // Provide post-deployment best practices for using the technology on AWS, including considerations such as migrating data, backups, ensuring high performance, high availability, etc. Link to software documentation for detailed information.
 
 === Network security
-The default network security setup of this solution follows AWS security best practices. The provisioned vSensor instances are deployed in private subnets and can only be accessed using SSH to the bastion hosts in the public subnets.
+This deployment follows AWS security best practices for network security. The vSensor instances are deployed in private subnets. They are only accessible from the internet using SSH to connect to bastion hosts in the private subnets. For existing VPC deployments, it is important that security groups only allow SSH access from trusted sources. It is not recommended to allow direct SSH access to vSensors from the internet. For more information, see https://aws.amazon.com/architecture/security-identity-compliance/?cards-all.sort-by=item.additionalFields.sortDate&cards-all.sort-order=desc&awsf.content-type=*all&awsf.methodology=*all[Best Practices for Security, Identity, & Compliance^].
 
-For existing VPC deployments, it is important for the *Security Groups* defined by the customer to allow only the minimum SSH access from trusted sources. It is not recommended to allow direct SSH access to vSensors from the internet.
+=== OS security
 
-=== OS Security
+To gain root access to vSensor instances, use the `ubuntu` user name and the EC2 key pair link:#_parameter_reference[parameter] you entered during deployment as the private key path. Then sudo to root. The EC2 key pair is also required to access `ec2-user` of the bastion hosts. For more information, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html[Connect to your Linux instance using SSH^].
 
-To gain root access to your vSensor instances you may use `ubuntu` user and then sudo to root. The key-pair provided during deployment will be required to access the `ec2-user` of the Bastion and `ubuntu` user of vSensors.
+The bastion hosts deployed by this Quick Start are set to update automatically. The deployed vSensors are configured to receive the latest security and product updates daily from Darktrace and Ubuntu package repositories.
 
-Deployed Bastions are set to automatically update. 
-The deployed vSensors are configured to update daily from the {partner-company-name} and Ubuntu package repositories for the latest security and product updates.
+== Additional resources
 
-===== AWS Services
+*AWS services*
 
 - AWS CloudFormation
 
-* Documentation: https://aws.amazon.com/documentation/cloudformation/
+* https://aws.amazon.com/documentation/cloudformation/[AWS CloudFormation Documentation^]
 
-* Helper scripts: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-helper-scripts-reference.html
+* https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-helper-scripts-reference.html[CloudFormation helper scripts reference^]
 
-- Amazon EC2 user guide for Linux https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/
+- https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/[What is Amazon EC2?^]
 
-- Amazon S3 https://aws.amazon.com/documentation/s3/
+- https://aws.amazon.com/documentation/s3/[Amazon Simple Storage Service Documentation^]
 
-- Amazon VPC https://aws.amazon.com/documentation/vpc/
+- https://aws.amazon.com/documentation/vpc/[Amazon Virtual Private Cloud Documentation^]
 
-===== Darktrace
+*Darktrace*
 
-- Darktrace https://darktrace.com
+- https://darktrace.com[Darktrace^]
 
-- Darktrace Customer Portal https://customerportal.darktrace.com
-
-- Darktrace Customer Portal vSensor Guides https://customerportal.darktrace.com/product-guides/main/vsensor-introduction
+- https://customerportal.darktrace.com[Darktrace Customer Portal^]

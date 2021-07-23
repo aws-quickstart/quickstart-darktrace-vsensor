@@ -5,7 +5,7 @@
 :doc-month: July
 :doc-year: 2021
 :partner-contributors: Development Team Documentations at {partner-company-name}
-:quickstart-contributors: Tony Bulding, AWS Integration and Automation team
+:quickstart-contributors: Tony Bulding, AWS Infrastructure and Automation team
 :deployment_time: 30 minutes / 1 hour
 :default_deployment_region: us-east-1
 :parameters_as_appendix: yes

@@ -2,27 +2,15 @@
 // Briefly describe the software. Use consistent and clear branding. 
 // Include the benefits of using the software on AWS, and provide details on usage scenarios.
 
-Darktrace’s threat detection capability uses a self-learning approach. Instead of trying to pre-define what ‘bad’ looks like, Darktrace builds an evolving understanding of an organization’s ‘pattern of life’ (or ‘self’), spotting very subtle changes in behaviors, as they occur to enable rapid investigation and response to in-progress attacks.
+This Quick Start deploys Darktrace vSensor virtual threat detection on the Amazon Web Services (AWS) Cloud. Instead of relying on flow logs, Darktrace's artificial intelligence system analyzes raw data from mirrored virtual private cloud (VPC) traffic to learn to identify threats. 
 
-Darktrace's award-winning 'pattern of life' anomaly detection is not limited to the physical network - Darktrace provides a suite of virtual sensors ideal for deployment in the VPC environment, extending visibility and response into the virtualized parts of your infrastructure. Enterprise Immune System coverage can be expanded to include your AWS environment by a combination of sensors and packet mirroring. Two categories of sensor are available: virtual probes (Darktrace vSensor) and traffic-forwarding agents (Darktrace osSensor).
+This deployment configures AWS VPC Traffic Mirroring to copy traffic from and to AWS Nitro-based Amazon Elastic Compute Cloud (Amazon EC2) instances you want to monitor. A Network Load Balancer distributes mirrored traffic to Darktrace vSensors installed on EC2 instances in the private subnets. The deployment also supports sending data to vSensors from Darktrace osSensors you have installed on virtual machines, containerized applications, and non-Nitro EC2 instance types. Darktrace osSensors can be installed on devices running Windows, supported Linux distributions, and any Linux environment running the Docker engine.
 
-The Darktrace vSensor is a lightweight virtual probe intended for deployment in cloud-based networks or environments where it is not feasible to deploy a physical probe, such as virtualized networks. vSensors can be deployedin a public cloud VPC traffic-mirroring scenario, or by collecting packets from osSensor agents deployed on VMs to be monitored.
-In addition to processing and transmitting network traffic, vSensors can ingest and forward syslog-format logs to a Darktrace Master Appliance. VPN and DHCP logs can provide valuable device-tracking enrichment and custom event types derived from ingested log data can be used to integrate with a number of third-party tools.
+Darktrace vSensor extracts metadata from captured packets of VPC traffic and stores it in an Amazon Simple Storage Service (Amazon S3) bucket. A Darktrace on-premises or cloud appliance performs threat analysis on this metadata using Darktrace's Enterprise Immune System. In this way, Darktrace builds metrics it uses to distinguish malicious activity in VPC traffic from normal traffic.
 
-In AWS VPC environments, the Darktrace vSensor can receive network traffic from EC2 instances in your AWS environment using Traffic Mirroring. The vSensor also supports ingestion of traffic from osSensors.
-Darktrace osSensors can be installed on devices running Windows, supported Linux distributions and any Linux environment running the Docker engine.
-The osSensor agent is installed on each customer device where visibility is desired and monitors all of the network traffic to/from that device; the monitored traffic is then sent to the vSensor for analysis.
+Darktrace vSensors support syslog to https://www.darktrace.com/en/integrations/[integrate^] with third-party security information and event management tools.
 
-Deployment scenarios are not mutually exclusive; a vSensor deployed in AWS receiving traffic via VPC mirroring may also have connected osSensors to ensure coverage over pre-nitro instances or containerized infrastructure.
-
-AWS deployments support Antigena autonomous response applied via osSensor agents. Antigena Network is accessable where a valid license key is present on the associated Darktrace Master, no additional configuration is required to begin taking actions.
-
-For a more detailed product information explanation, Darktrace provides an elaborate Customer Portal, which hosts specific product guides. 
 
 === High Availability on AWS
 
-The AWS Cloud infrastructure is global, and is built around Regions and Availability Zones. A Region is a separate geographic area where you can place AWS instances and data. For a current map of AWS Regions, see AWS Global Infrastructure on the AWS website. When you launch this Quick Start, you can choose the AWS Region where you would like to deploy your Darktrace vSensors.
-
-Each Region includes multiple Availability Zones, which are isolated locations with one or more discrete data centers—each with redundant power, networking and connectivity, housed in separate facilities. When you’re running databases on AWS, you can benefit significantly from Availability Zones, because they are connected to one another with fast, private, fiber-optic networking, providing automatic failover without interruption.
-
-This Quick Start relies on AWS Availability Zones. When multiple vSensors are deployed, they will launch across multiple Availability Zones, allowing for High Availability operation.
+If you choose to deploy more than one vSensor, they are deployed across multiple Availability Zones for high-availability. For more information, see https://aws.amazon.com/about-aws/global-infrastructure/regions_az/[Regions and Availability Zones].

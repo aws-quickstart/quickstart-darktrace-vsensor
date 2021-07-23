@@ -52,6 +52,10 @@ The bastion hosts deployed by this Quick Start are set to update automatically. 
 
 - https://aws.amazon.com/documentation/vpc/[Amazon Virtual Private Cloud Documentation^]
 
+- https://aws.amazon.com/blogs/networking-and-content-delivery/using-vpc-traffic-mirroring-to-monitor-and-secure-your-aws-infrastructure/[Using VPC Mirroring to monitor and secure your AWS infrastructure]
+
+
+
 *Darktrace*
 
 - https://darktrace.com[Darktrace^]

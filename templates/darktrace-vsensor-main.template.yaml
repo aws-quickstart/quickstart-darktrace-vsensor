@@ -608,6 +608,17 @@ Outputs:
           - VPCStack
           - Outputs.PublicSubnet2ID
 
+  NatGatewayEIPs:
+    Description: Elastic IPs allocated to subnets, allow these access to your Appliance.
+    Value: !Join
+      - ","
+      - - Fn::GetAtt:
+          - VPCStack
+          - Outputs.NAT1EIP
+        - Fn::GetAtt:
+          - VPCStack
+          - Outputs.NAT2EIP
+
   LoadBalancer:
     Description: Network Load Balancer, required for osSensor clients.
     Value:

@@ -11,11 +11,12 @@ If your Darktrace appliance is behind a firewall, you must grant access to the a
 
 === Configure traffic mirroring
 
+To add your existing EC2 instances to be mirrored and monitored, configure a traffic mirror session. For more information, see https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html[Traffic mirror sessions^]. When doing this, use the traffic mirror target and filter IDs on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. You can automate the process of adding your existing EC2 instances to this deployment. For more information, contact your Darktrace representative for scripts and guidance to do this.
+
 VPC Traffic Mirroring is only supported on AWS Nitro-based EC2 instance types and some non-Nitro instance types. For more information, see https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types[Amazon VPC Traffic Mirroring is now supported on select non-Nitro instance types^]. 
 
 To monitor EC2 instance types that do not support VPC Traffic Mirroring, configure them with Darktrace osSensors. When doing this, use the DNS name of the Network Load Balancer on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[CloudFormation console^]. For more information about configuring osSensors, visit the https://customerportal.darktrace.com/login[Darktrace Customer Portal^].
 
-To add your existing EC2 instances to be mirrored and monitored, configure a traffic mirror session. For more information, see https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html[Traffic mirror sessions^]. When doing this, use the traffic mirror target and filter IDs on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. You can automate the process of adding your existing EC2 instances to this deployment. For more information, contact your Darktrace representative for scripts and guidance to do this.
 
 === Test the deployment
 

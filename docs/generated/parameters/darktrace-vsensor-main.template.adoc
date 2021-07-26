@@ -19,7 +19,7 @@
 (`BastionKeyPairName`)|`**__Requires input__**`|Name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.|Bastion AMI operating system
 (`BastionAMIOS`)|`Amazon-Linux2-HVM`|Linux distribution for the AMI to be used for the bastion instances.
 |===
-.Darktrace appliance cnfiguration
+.Darktrace appliance configuration
 [width="100%",cols="16%,11%,73%",options="header",]
 |===
 |Parameter label (name) |Default value|Description|Appliance hostname

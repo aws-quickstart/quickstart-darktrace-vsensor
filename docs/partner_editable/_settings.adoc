@@ -1,4 +1,4 @@
-:quickstart-project-name: quickstart-documentation-base
+:quickstart-project-name: quickstart-darktrace-vsensor
 :partner-product-name: Darktrace vSensor
 :partner-product-short-name: Darktrace vSensor
 :partner-company-name: Darktrace

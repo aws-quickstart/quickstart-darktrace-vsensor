@@ -553,6 +553,7 @@ Resources:
               echo "Setting configuration"
               #set updatekey, upgrade and enable daily updates
               set_updatekey.sh ${VsensorUpdatekey}
+              sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a EphemeralProbe=true" /etc/sabreserver/local_lite.cfg # Configure vSensor for use in ASG.
               sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
               set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
               sleep 5
@@ -881,6 +882,10 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
       LifecycleConfiguration:
         Rules:
           - Id: !Sub 'DeleteAfter${LifecycleS3BucketDays}Days'

@@ -1,4 +1,4 @@
-// If no preperation is required, remove all content from here
+// If no preparation is required, remove all content from here
 
 ==== Register a push token
 
@@ -6,10 +6,11 @@ Register a new push token to enable connection between vSensor probes and an exi
 
 NOTE: Darktrace cloud instances are already configured to allow push token access.
 //TODO: Is the above correctly worded? In other words, this section is only for registration of a push token on an on-premises appliance?
+
 . Log into the Darktrace console.
-. On the main menu, choose *Admin > System Config*.
+. On the main menu, choose *Admin*, and then *System Config*.
 . In the *Push Probe Tokens* section, enter a label for the vSensor deployment.
-. Choose *Add*. A token is generated in the form of `[label:string]`. 
+. Choose *Add*. A token is generated in the format `[label:string]`. 
 . Record the token, as it only displays once. You must enter the token in the *Appliance push token* link:#_parameter_reference[parameter] field during Quick Start deployment.
 
 If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways after deployment. For more information, see link:#post-deployment-steps[Post deployment steps], later in this guide.

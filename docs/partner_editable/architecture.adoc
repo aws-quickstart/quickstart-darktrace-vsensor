@@ -16,8 +16,8 @@ As shown in <<architecture1>>, the Quick Start sets up the following:
 * In the private subnets:
 ** Managed network address translation (NAT) gateways to allow outbound internet access to Darktrace vSensor instances.
 ** An Auto Scaling group of Darktrace vSensor probes hosted on Amazon EC2 instances. 
-* VPC traffic mirroring to send mirrored traffic to a Network Load Balancer.
-* A Network Load Balancer to distribute monitored VPC traffic to Darktrace vSensor instances.
+* A Traffic mirroring session to send mirrored traffic to a Network Load Balancer.
+* A Network Load Balancer to distribute VPC traffic to Darktrace vSensor instances.
 * An Amazon Simple Storage Service (Amazon S3) bucket to store packets captured by Darktrace vSensor.
 * Amazon CloudWatch to provide:
 ** CloudWatch alarms to invoke dynamic scaling of the Darktrace vSensor Auto Scaling group.

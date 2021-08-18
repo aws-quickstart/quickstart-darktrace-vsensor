@@ -5,9 +5,9 @@
 
 === Configure networking
 
-If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.
+If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the *NatGatewayEIPs* on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.
 
-//TODO: I don't see *NAT Gateway Elastic IPs* in cfn_outputs.png. I don't need a new screen shot, just confirm that if I say "For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the AWS CloudFormation console," this is correct.
+//TODO: I don't see *NAT Gateway Elastic IPs* in cfn_outputs.png. I don't need a new screen shot, just confirm that if I say "For a new VPC deployment, use the Elastic IPs of the NAT gateway on the *Outputs* tab of the stack in the AWS CloudFormation console," this is correct. // DT: Main Template corrected to add them.
 
 === Configure traffic mirroring
 
@@ -20,9 +20,9 @@ To monitor EC2 instance types that do not support VPC Traffic Mirroring, configu
 
 === Test the deployment
 
-After deployment, verify that all vSensors are listed in the *Probes* section of the *System Config* screen in the Darktrace console. After adding the EC2 instances that you want to monitor, verify that they display in the https://www.darktrace.com/en/threat-visualization/[Darktrace Threat Visualizer^].
+After deployment, verify that all vSensors are listed in the *Probes* section of the *System Config* screen in the https://www.darktrace.com/en/threat-visualization/[Darktrace Threat Visualizer^]. After adding the Traffic Mirror Sessions of EC2 instances that you wish to monitor, or configured osSensors to communicate with the vSensors, verify that they display in the Threat Visualizer.
 
-//TODO: Please review wording here^.
+//TODO: Please review wording here^. DT: Done.
 
 
 == Security

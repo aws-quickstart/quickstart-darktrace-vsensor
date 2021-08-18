@@ -351,7 +351,7 @@ Parameters:
     Type: String
 
 Conditions:
-  UsingDefaultBucket: !Equals 
+  UsingDefaultBucket: !Equals
     - !Ref QSS3BucketName
     - "aws-quickstart"
 
@@ -603,10 +603,21 @@ Outputs:
       - ","
       - - Fn::GetAtt:
           - VPCStack
-          - Outputs.PublicSubnet1AID
+          - Outputs.PublicSubnet1ID
         - Fn::GetAtt:
           - VPCStack
-          - Outputs.PublicSubnet2AID
+          - Outputs.PublicSubnet2ID
+
+  NatGatewayEIPs:
+    Description: Elastic IPs allocated to subnets, allow these access to your Appliance.
+    Value: !Join
+      - ","
+      - - Fn::GetAtt:
+          - VPCStack
+          - Outputs.NAT1EIP
+        - Fn::GetAtt:
+          - VPCStack
+          - Outputs.NAT2EIP
 
   LoadBalancer:
     Description: Network Load Balancer, required for osSensor clients.

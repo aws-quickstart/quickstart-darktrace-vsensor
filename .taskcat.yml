@@ -13,7 +13,7 @@ project:
     VSensorAppliancePushtoken: "aws-quickstart-pushtoken:12345678abcdefg"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
     VSensorKeyPairName: $[taskcat_getkeypair]
-  template: ./templates/darktrace-vsensor-main.template.yaml
+  template: templates/darktrace-vsensor-main.template.yaml
 tests:
   vsensor:
     regions:

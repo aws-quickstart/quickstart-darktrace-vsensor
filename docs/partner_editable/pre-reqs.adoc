@@ -2,10 +2,10 @@
 
 ==== Register a push token
 
-Register a new push token to enable connection between vSensor probes and an existing on-premises Darktrace appliance. All of the vSensor instances in this deployment share the same push token.
+Register a new push token to enable connection between vSensor probes and an existing Darktrace on-premise or cloud appliance. All of the vSensor instances in this deployment share the same push token.
+
 
 NOTE: Darktrace cloud instances are already configured to allow push token access.
-//TODO: Is the above correctly worded? In other words, this section is only for registration of a push token on an on-premises appliance?
 
 . Log into the Darktrace console.
 . On the main menu, choose *Admin*, and then *System Config*.
@@ -13,4 +13,7 @@ NOTE: Darktrace cloud instances are already configured to allow push token acces
 . Choose *Add*. A token is generated in the format `[label:string]`. 
 . Record the token, as it only displays once. You must enter the token in the *Appliance push token* link:#_parameter_reference[parameter] field during Quick Start deployment.
 
-If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways after deployment. For more information, see link:#post-deployment-steps[Post deployment steps], later in this guide.
+If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT Gateways after deployment. For more information, see link:#post-deployment-steps[Post deployment steps], later in this guide.
+
+NOTE: Darktrace cloud appliances are already configured to allow push token access, no firewall changes are necessary.
+//TODO: Is the above correctly worded? In other words, this section is only for registration of a push token on an on-premises appliance? DT: The note was referencing firewall access from the above line. Edited to be more clear.

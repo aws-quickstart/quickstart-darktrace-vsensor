@@ -26,10 +26,10 @@ NOTE: You are responsible for the cost of the AWS services used while running th
 
 [cols=2*]
 |===
-^|http://qs_launch_link[Deploy {partner-product-name} into a new VPC on AWS^]
-^|http://qs_template_link[View template^]
-^|http://qs_launch_link[Deploy {partner-product-name} into an existing VPC on AWS^]
-^|http://qs_template_link[View template^]
+^|https://fwd.aws/6eP6A?[Deploy {partner-product-name} into a new VPC on AWS^]
+^|https://fwd.aws/ge6kk?[View template^]
+^|https://fwd.aws/WpVn9?[Deploy {partner-product-name} into an existing VPC on AWS^]
+^|https://fwd.aws/KekyV?[View template^]
 |===
 
 WARNING: If you’re deploying {partner-product-name} into an existing VPC, make sure that your VPC has two private subnets in different Availability Zones for the workload instances, and that the subnets aren’t shared. This Quick Start doesn’t support https://docs.aws.amazon.com/vpc/latest/userguide/vpc-sharing.html[shared subnets^]. These subnets require https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html[NAT gateways^] in their route tables, to allow the instances to download packages and software without exposing them to the internet.

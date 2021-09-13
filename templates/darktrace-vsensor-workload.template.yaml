@@ -538,7 +538,7 @@ Resources:
               }
 
               touch /etc/darktrace/.userdata-started
-              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+              exec > >(tee -a /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
               trap "exittrap" EXIT
 
@@ -561,7 +561,6 @@ Resources:
                 set_ossensor_hmac.sh ${osSensorHMAC}
                 sleep 5
               fi
-              # If using dummy appliance, using for CI, don't enable PCAP storage to allow successful bucket deletion.
               set_pcap_s3_bucket.sh ${PCAPS}
               sleep 5
               touch /etc/darktrace/.userdata-config-complete

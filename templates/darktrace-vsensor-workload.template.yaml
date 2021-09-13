@@ -526,7 +526,6 @@ Resources:
               function exittrap() {
                   exitcode="$?"
                   set +e
-                  INSTANCE_ID="`wget -q -O - http://instance-data/latest/meta-data/instance-id`"
                   if [ "$exitcode" -gt 0 ]; then
                       echo "Failed to successfully configure vSensor, more details in /var/log/user-data.log"
                       aws autoscaling complete-lifecycle-action --lifecycle-action-result ABANDON --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region} 
@@ -544,6 +543,10 @@ Resources:
 
               # See https://youtu.be/unMiTRw8JVE for an example on how to review this console output.
               echo "Starting userdata"
+
+              echo "Getting instance ID and attempt to disable source-dest checking metadata."
+              INSTANCE_ID=$(ec2metadata --instance-id)
+              aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $INSTANCE_ID --region ${AWS::Region} || echo "Failed to set source-dest. Continuing anyway." # Not serious if this doesn't succeed.
 
               echo "Running firstboot scripts"
               /usr/lib/inithooks/firstboot.d/15random-uuid
@@ -1165,6 +1168,12 @@ Resources:
                   - AutoScalingGroupName: !Sub
                     - "${ShortID}-vSensor-ASG"
                     - ShortID: !GetAtt ShortIDRand.IDString
+        - PolicyName: "AllowSourceDestCheckModificationPolicy"
+          PolicyDocument:
+            Statement:
+            - Effect: "Allow"
+              Action: "ec2:ModifyInstanceAttribute"
+              Resource: "*"
 
 Outputs:
   BucketName:

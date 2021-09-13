@@ -3,7 +3,7 @@ Description: This template deploys a scaling vSensor cluster for monitoring exis
 
 Metadata:
   QuickStartDocumentation:
-    EntrypointName: "Launch into an existing VPC"
+    EntrypointName: Parameters for deploying into an existing VPC
     Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:

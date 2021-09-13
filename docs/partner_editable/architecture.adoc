@@ -18,10 +18,10 @@ As shown in <<architecture1>>, the Quick Start sets up the following:
 ** An Auto Scaling group of Darktrace vSensor probes hosted on Amazon EC2 instances. 
 * VPC traffic mirroring to send mirrored traffic to a Network Load Balancer.
 * A Network Load Balancer to distribute monitored VPC traffic to Darktrace vSensor instances.
-* An Amazon Simple Storage Service (Amazon S3) bucket to store packets captured by Darktrace vSensor.
+* An Amazon S3 bucket to store packets captured by Darktrace vSensor.
 * Amazon CloudWatch to provide:
-** CloudWatch alarms to invoke dynamic scaling of the Darktrace vSensor Auto Scaling group.
-** CloudWatch Logs to collect metrics from Darktrace vSensor EC2 instances.
+** An alarm to invoke dynamic scaling of the Darktrace vSensor Auto Scaling group. 
+** Logs to collect metrics from Darktrace vSensor EC2 instances.
 
 [.small]#*The template that deploys the Quick Start into an existing VPC skips the components marked by asterisks and prompts you for your existing VPC configuration.#
 

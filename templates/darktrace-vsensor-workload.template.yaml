@@ -1173,7 +1173,9 @@ Resources:
             Statement:
             - Effect: "Allow"
               Action: "ec2:ModifyInstanceAttribute"
-              Resource: "*"
+              Resource: !Sub
+                - "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
+                - SecurityGroup: !GetAtt SecurityGroupvSensor.GroupId
 
 Outputs:
   BucketName:

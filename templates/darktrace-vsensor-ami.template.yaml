@@ -209,6 +209,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - 'ec2:StopInstances'
                   - 'ec2:TerminateInstances'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:*'
@@ -338,7 +339,7 @@ Resources:
           - name: InstallVsensor
             action: aws:runCommand
             onFailure: "step:SignalFailure"
-            nextStep: "CreateImage"
+            nextStep: "ShutdownVSensor"
             timeoutSeconds: 3600
             inputs:
               DocumentName: AWS-RunShellScript
@@ -351,10 +352,22 @@ Resources:
                   - 'wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb || exit 1'
                   - 'sudo dpkg -i -E ./amazon-cloudwatch-agent.deb || exit 1'
                   - 'systemctl enable amazon-cloudwatch-agent || exit 1'
+                  - 'sleep 20' # Sleep just to make sure the machine is settled before letting SSM shut it down for snapshotting.
                   # If any steps fails signals CFN of Failure
               CloudWatchOutputConfig:
                 CloudWatchOutputEnabled: "true"
                 CloudWatchLogGroupName: "{{LogGroupName}}"
+
+          # Shut the vSensor down before snapshot for AMI
+          - name: "ShutdownVSensor"
+            action: "aws:executeAwsApi"
+            onFailure: "step:SignalFailure"
+            nextStep: "CreateImage"
+            inputs:
+              Service: ec2
+              Api: StopInstances
+              InstanceIds:
+                - "{{InstanceIds.InstanceId}}"
 
           # Create the custom AMI
           - name: CreateImage

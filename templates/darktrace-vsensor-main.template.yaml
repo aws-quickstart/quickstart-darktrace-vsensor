@@ -4,7 +4,7 @@ Description: This template creates a virtual private cloud (VPC) infrastructure 
 Metadata:
 
   QuickStartDocumentation:
-    EntrypointName: "Launch into a new VPC"
+    EntrypointName: Parameters for deploying into a new VPC
     Order: 1
   AWS::CloudFormation::Interface:
     ParameterGroups:

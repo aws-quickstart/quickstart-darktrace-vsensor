@@ -182,7 +182,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
   padding-top:0;
   overflow:hidden;
   background:#283e5b;
-  border-bottom: 4px solid #435c7c;
+  /* border-bottom: 4px solid #435c7c; */
   width:320px;
   height:154px;
   top:0;
@@ -411,7 +411,7 @@ span.icon>.fa{cursor:default}
 a span.icon>.fa{cursor:inherit}
 .admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
 .admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
-.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";color: rgb(3, 87, 21);}
 .admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
 .admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
 .admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
@@ -747,8 +747,43 @@ p {
   font-weight  : 300 !important;
 }
 
-#toc.toc2 #toctitle{
-  background-image: url('images/AWS-Logo.svg');
+/* image layout */
+#toc.toc2 #toctitle {
+  background-image: url("images/AWS-Logo.svg");
+  background-repeat: no-repeat;
+  background-size: 50%;
+  background-position: center;
+  width: auto;
+  height: 15%;
+}
+
+/* Left Navbar size */
+#toc.toc2 {
+  width: 17%;
+  min-width: 15em;
+}
+
+/* auto width for main page */
+body.toc2 {
+  padding-left: 22%;
+  padding-right: 2%;
+}
+
+/* hide left nav bar if page size is smaller than 767px */
+@media screen and (max-width: 767px) {
+  #toc {
+      display: none !important;
+  }
+  body.toc2 {
+    padding-left: 1%;
+    padding-right: 1%;
+    position: relative;
+  }
+
+  #content {
+    padding-left: 2%;
+    padding-right: 2%;
+  }
 }
 
 /* QS Tables */
@@ -790,7 +825,11 @@ p.footer-text a{color:#d7d8d8}
 <div id="toctitle"></div>
 <ul class="sectlevel1">
 <li><a href="#_overview">Overview</a></li>
-<li><a href="#_darktrace_vsensor_on_aws">Darktrace vSensor on AWS</a></li>
+<li><a href="#_darktrace_vsensor_on_aws">Darktrace vSensor on AWS</a>
+<ul class="sectlevel2">
+<li><a href="#_high_availability_on_aws">High Availability on AWS</a></li>
+</ul>
+</li>
 <li><a href="#_aws_costs">AWS costs</a></li>
 <li><a href="#_software_licenses">Software licenses</a></li>
 <li><a href="#_architecture">Architecture</a></li>
@@ -809,19 +848,20 @@ p.footer-text a{color:#d7d8d8}
 </li>
 <li><a href="#_post_deployment_steps">Post deployment steps</a>
 <ul class="sectlevel2">
-<li><a href="#_configuring_networking">Configuring Networking</a></li>
-<li><a href="#_configuring_mirroring_of_instances">Configuring Mirroring of Instances</a></li>
-<li><a href="#_configuring_ossensors">Configuring osSensors</a></li>
+<li><a href="#_configure_networking">Configure networking</a></li>
+<li><a href="#_configure_traffic_mirroring">Configure traffic mirroring</a></li>
 <li><a href="#_test_the_deployment">Test the deployment</a></li>
 </ul>
 </li>
 <li><a href="#_security">Security</a>
-<ul class="sectlevel3">
-<li><a href="#_network_security">Network Security</a></li>
-<li><a href="#_os_security">OS Security</a></li>
+<ul class="sectlevel2">
+<li><a href="#_network_security">Network security</a></li>
+<li><a href="#_os_security">OS security</a></li>
 </ul>
 </li>
+<li><a href="#_additional_resources">Additional resources</a></li>
 <li><a href="#_faq">FAQ</a></li>
+<li><a href="#_customer_responsibility">Customer responsibility</a></li>
 <li><a href="#_parameter_reference">Parameter reference</a>
 <ul class="sectlevel2">
 <li><a href="#_launch_into_a_new_vpc">Launch into a new VPC</a></li>
@@ -842,35 +882,22 @@ p.footer-text a{color:#d7d8d8}
 <h2 id="_quick_start_reference_deployment" class="discrete text-left text-center">Quick Start Reference Deployment</h2>
 <div class="imageblock text-center">
 <div class="content">
-<img src="https://aws-quickstart.s3.amazonaws.com/quickstart-documentation-base/docs/boilerplate/.images/aws-quickstart-graphic.png" alt="QS" width="80" height="80">
+<img src="https://aws-quickstart.s3.amazonaws.com/quickstart-darktrace-vsensor/docs/boilerplate/.images/aws-quickstart-graphic.png" alt="QS" width="80" height="80">
 </div>
 </div>
-<h3 id="_draft_document_unofficial_guidance" class="discrete text-center">DRAFT DOCUMENT / UNOFFICIAL GUIDANCE</h3>
-<div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/__settings</em>.adoc</code></strong>_</p>
-</div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph text-center">
+<div class="paragraph text-center">
 <p><strong>July 2021</strong><br>
 <em>Development Team Documentations at Darktrace</em><br>
-<em>Tony Bulding, Amazon Web Services</em></p>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-<div class="admonitionblock tip">
+<em>Tony Bulding, AWS Infrastructure and Automation team</em></p>
+</div>
+<div class="admonitionblock tip text-left">
 <table>
 <tr>
 <td class="icon">
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-Visit our <a href="https://github.com/aws-quickstart/quickstart-documentation-base" target="_blank" rel="noopener">GitHub repository</a> for source files and to post feedback,
+Visit our <a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor" target="_blank" rel="noopener">GitHub repository</a> for source files and to post feedback,
 report bugs, or submit feature ideas for this Quick Start.
 </td>
 </tr>
@@ -885,23 +912,11 @@ report bugs, or submit feature ideas for this Quick Start.
 <h2 id="_overview">Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/overview_target_and_usage.adoc</code></strong></em></p>
-</div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>This Quick Start reference deployment guide provides step-by-step instructions for deploying <strong>Darktrace vSensor</strong> on the AWS Cloud.</p>
+<p>This Quick Start reference deployment guide provides step-by-step instructions for deploying Darktrace vSensor on the AWS Cloud.</p>
 </div>
 <div class="paragraph">
-<p>This guide is for database administrators, enterprise architects, system administrators, and developers who would like to run <strong>Darktrace vSensor</strong> probes in a highly available Amazon Elastic Compute Cloud (Amazon EC2) environment.</p>
-</div></div></td>
-</tr>
-</tbody>
-</table>
+<p>This guide is for database administrators, enterprise architects, system administrators, and developers who want to run Darktrace vSensor probes in a highly-available Amazon Elastic Compute Cloud (Amazon EC2) environment.</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -920,53 +935,23 @@ Amazon may share user-deployment information with the AWS Partner that collabora
 <h2 id="_darktrace_vsensor_on_aws">Darktrace vSensor on AWS</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/product_description.adoc</code></strong></em></p>
-</div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>Darktrace’s threat detection capability uses a self-learning approach. Instead of trying to pre-define what ‘bad’ looks like, Darktrace builds an evolving understanding of an organization’s ‘pattern of life’ (or ‘self’), spotting very subtle changes in behaviors, as they occur to enable rapid investigation and response to in-progress attacks.</p>
+<p>This Quick Start deploys Darktrace vSensor virtual threat detection on the Amazon Web Services (AWS) Cloud. Instead of relying on flow logs, Darktrace probes analyze raw data from mirrored virtual private cloud (VPC) traffic to learn to identify threats.</p>
 </div>
 <div class="paragraph">
-<p>Darktrace&#8217;s award-winning 'pattern of life' anomaly detection is not limited to the physical network - Darktrace provides a suite of virtual sensors ideal for deployment in the VPC environment, extending visibility and response into the virtualized parts of your infrastructure. Enterprise Immune System coverage can be expanded to include your AWS environment by a combination of sensors and packet mirroring. Two categories of sensor are available: virtual probes (Darktrace vSensor) and traffic-forwarding agents (Darktrace osSensor).</p>
+<p>Amazon Virtual Private Cloud (VPC) traffic mirroring copies traffic from Amazon Elastic Compute Cloud (Amazon EC2) instances you want to monitor. A Network Load Balancer distributes mirrored traffic to Darktrace vSensor probes in private subnets. The deployment also supports sending data to vSensors from Darktrace osSensors you configure on virtual machines, containerized applications, and legacy EC2 instance types that do not support traffic mirroring.</p>
 </div>
 <div class="paragraph">
-<p>The Darktrace vSensor is a lightweight virtual probe intended for deployment in cloud-based networks or environments where it is not feasible to deploy a physical probe, such as virtualized networks. vSensors can be deployedin a public cloud VPC traffic-mirroring scenario, or by collecting packets from osSensor agents deployed on VMs to be monitored.
-In addition to processing and transmitting network traffic, vSensors can ingest and forward syslog-format logs to a Darktrace Master Appliance. VPN and DHCP logs can provide valuable device-tracking enrichment and custom event types derived from ingested log data can be used to integrate with a number of third-party tools.</p>
+<p>Darktrace vSensor extracts relevant metadata from mirrored traffic and stores it in an Amazon Simple Storage Service (Amazon S3) bucket. A Darktrace appliance analyzes the metadata using Darktrace&#8217;s Enterprise Immune System to build metrics it uses to identify threats.</p>
 </div>
 <div class="paragraph">
-<p>In AWS VPC environments, the Darktrace vSensor can receive network traffic from EC2 instances in your AWS environment using Traffic Mirroring. The vSensor also supports ingestion of traffic from osSensors.
-Darktrace osSensors can be installed on devices running Windows, supported Linux distributions and any Linux environment running the Docker engine.
-The osSensor agent is installed on each customer device where visibility is desired and monitors all of the network traffic to/from that device; the monitored traffic is then sent to the vSensor for analysis.</p>
-</div>
-<div class="paragraph">
-<p>Deployment scenarios are not mutually exclusive; a vSensor deployed in AWS receiving traffic via VPC mirroring may also have connected osSensors to ensure coverage over pre-nitro instances or containerized infrastructure.</p>
-</div>
-<div class="paragraph">
-<p>AWS deployments support Antigena autonomous response applied via osSensor agents. Antigena Network is accessable where a valid license key is present on the associated Darktrace Master, no additional configuration is required to begin taking actions.</p>
-</div>
-<div class="paragraph">
-<p>For a more detailed product information explanation, Darktrace provides an elaborate Customer Portal, which hosts specific product guides.</p>
+<p>Darktrace vSensors support syslog to <a href="https://www.darktrace.com/en/integrations/" target="_blank" rel="noopener">integrate</a> with third-party security information and event management tools.</p>
 </div>
 <div class="sect2">
 <h3 id="_high_availability_on_aws">High Availability on AWS</h3>
 <div class="paragraph">
-<p>The AWS Cloud infrastructure is global, and is built around Regions and Availability Zones. A Region is a separate geographic area where you can place AWS instances and data. For a current map of AWS Regions, see AWS Global Infrastructure on the AWS website. When you launch this Quick Start, you can choose the AWS Region where you would like to deploy your Darktrace vSensors.</p>
+<p>If you choose to deploy more than one vSensor, they are deployed across multiple Availability Zones for high-availability. For more information, see <a href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/">Regions and Availability Zones</a>.</p>
 </div>
-<div class="paragraph">
-<p>Each Region includes multiple Availability Zones, which are isolated locations with one or more discrete data centers—each with redundant power, networking and connectivity, housed in separate facilities. When you’re running databases on AWS, you can benefit significantly from Availability Zones, because they are connected to one another with fast, private, fiber-optic networking, providing automatic failover without interruption.</p>
 </div>
-<div class="paragraph">
-<p>This Quick Start relies on AWS Availability Zones. When multiple vSensors are deployed, they will launch across multiple Availability Zones, allowing for High Availability operation.</p>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 <div class="sect1">
@@ -989,7 +974,7 @@ see the pricing pages for each AWS service you use. Prices are subject to change
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-After you deploy the Quick Start, <a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/billing-reports-gettingstarted-turnonreports.html" target="_blank" rel="noopener">create AWS Cost and Usage Reports</a> to deliver billing metrics to an Amazon Simple Storage Service (Amazon S3) bucket in your account. These reports provide cost estimates based on usage throughout each month and aggregate the data at the end of the month. For more information, see <a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/billing-reports-costusage.html" target="_blank" rel="noopener">What are AWS Cost and Usage Reports?</a>
+After you deploy the Quick Start, create <a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/billing-reports-gettingstarted-turnonreports.html" target="_blank" rel="noopener">AWS Cost and Usage Reports</a> to deliver billing metrics to an Amazon Simple Storage Service (Amazon S3) bucket in your account. These reports provide cost estimates based on usage throughout each month and aggregate the data at the end of the month. For more information, see <a href="https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html" target="_blank" rel="noopener">What are AWS Cost and Usage Reports?</a>
 </td>
 </tr>
 </table>
@@ -1000,50 +985,26 @@ After you deploy the Quick Start, <a href="https://docs.aws.amazon.com/awsaccoun
 <h2 id="_software_licenses">Software licenses</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/licenses.adoc</code></strong></em></p>
+<p>This Quick Start requires a valid update key obtained from the <a href="https://customerportal.darktrace.com" target="_blank" rel="noopener">Darktrace Customer Portal</a> or a Darktrace representative. You must provide a valid update key during deployment in order for the Quick Start to launch successfully. A free 30-day trial is available. Contact your Darktrace representative or see <a href="https://www.darktrace.com/en/trial/">Start your free 30-day trial today</a>.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>Deploying <strong>Darktrace vSensor</strong> requires a valid <strong>Update Key</strong>, supplied by the <strong>Darktrace Customer Portal</strong> or your <strong>Darktrace representative</strong>. If a valid <strong>Update Key</strong> is not provided, this Quick Start deployment will not complete successfully.</p>
-</div>
-<div class="paragraph">
-<p>If you are interested in deploying <strong>Darktrace vSensor</strong> in your AWS environment, please discuss this with your Darktrace representative or reach out to <a href="mailto:info@darktrace.com">info@darktrace.com</a> to discuss a Darktrace Proof of Value trial. The Darktrace Proof of Value (POV) is a 30-day free trial of Darktrace’s Enterprise Immune System technology, designed to quickly demonstrate the value of self-learning Cyber AI in protecting your employees and organization from cyber-threats.</p>
-</div></div></td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_architecture">Architecture</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/architecture.adoc</code></strong></em></p>
+<p>Deploying this Quick Start for a new virtual private cloud (VPC) with
+default parameters builds the following Darktrace vSensor environment in the
+AWS Cloud.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>This Quick Start provides two possible deployment architectures.</p>
-</div>
-<div class="sect2">
-<h3 id="_deployment_without_existing_vpc">Deployment without existing VPC</h3>
-<div class="imageblock">
+<div id="architecture1" class="imageblock">
 <div class="content">
-<a class="image" href="images/architecture_diagram.png"><img src="images/vSensor_with_bastion.png" alt="Architecture" width="648" height="439"></a>
+<img src="images/darktrace-vsensor-architecture-diagram.png" alt="Architecture" width="100%" height="100%">
 </div>
-<div class="title">Figure 1. Quick Start architecture for Darktrace vSensor for a new VPC on AWS</div>
+<div class="title">Figure 1. Quick Start architecture for Darktrace vSensor on AWS</div>
 </div>
 <div class="paragraph">
-<p>Using the New VPC Deployment, as shown in <strong>Figure 1</strong>, the Quick Start deploys the following:</p>
+<p>As shown in <a href="#architecture1">Figure 1</a>, the Quick Start sets up the following:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1051,29 +1012,49 @@ After you deploy the Quick Start, <a href="https://docs.aws.amazon.com/awsaccoun
 <p>A highly available architecture that spans two Availability Zones.</p>
 </li>
 <li>
-<p>A VPC configured with public and private subnets, according to AWS best practices, to provide you with your own virtual network on AWS, via the <a href="https://github.com/aws-quickstart/quickstart-aws-vpc" target="_blank" rel="noopener">AWS VPC Quick Start</a>.</p>
+<p>A virtual private network (VPC) configured with public and private subnets, according to AWS best practices, to provide you with your own virtual network on AWS.</p>
 </li>
 <li>
-<p>Two private subnets populated with:</p>
+<p>In the public subnets:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>Managed network address translation (NAT) gateways to allow outbound
-internet access for resources in the private subnets.</p>
-</li>
-<li>
-<p>The main vSensor Deployment (as described below)</p>
+<p>Linux bastion hosts in an Auto Scaling group managing inbound Secure Shell (SSH) access to Darktrace vSensor instances in the private subnets.*</p>
 </li>
 </ul>
 </div>
 </li>
 <li>
-<p>Two public subnets populated with:</p>
+<p>In the private subnets:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>A Linux bastion host in an Auto Scaling Group (using the <a href="https://aws-quickstart.github.io/quickstart-linux-bastion/" target="_blank" rel="noopener">AWS Bastion Quick Start</a>) to allow inbound Secure
-Shell (SSH) access to EC2 instances (primarily vSensor Instances) in each private subnet.</p>
+<p>Managed network address translation (NAT) gateways to allow outbound internet access to Darktrace vSensor instances.</p>
+</li>
+<li>
+<p>An Auto Scaling group of Darktrace vSensor probes hosted on Amazon EC2 instances.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>VPC traffic mirroring to send mirrored traffic to a Network Load Balancer.</p>
+</li>
+<li>
+<p>A Network Load Balancer to distribute monitored VPC traffic to Darktrace vSensor instances.</p>
+</li>
+<li>
+<p>An Amazon Simple Storage Service (Amazon S3) bucket to store packets captured by Darktrace vSensor.</p>
+</li>
+<li>
+<p>Amazon CloudWatch to provide:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>CloudWatch alarms to invoke dynamic scaling of the Darktrace vSensor Auto Scaling group.</p>
+</li>
+<li>
+<p>CloudWatch Logs to collect metrics from Darktrace vSensor EC2 instances.</p>
 </li>
 </ul>
 </div>
@@ -1081,52 +1062,8 @@ Shell (SSH) access to EC2 instances (primarily vSensor Instances) in each privat
 </ul>
 </div>
 <div class="paragraph">
-<p>All subnets created are free for your own use to deploy EC2 resources to be mirrored by the vSensor deployment.</p>
+<p><span class="small">*The template that deploys the Quick Start into an existing VPC skips the components marked by asterisks and prompts you for your existing VPC configuration.</span></p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_deployment_into_existing_vpc">Deployment into existing VPC</h3>
-<div class="imageblock">
-<div class="content">
-<a class="image" href="images/architecture_diagram.png"><img src="images/architecture_diagram.png" alt="Architecture" width="648" height="439"></a>
-</div>
-<div class="title">Figure 2. Quick Start architecture for Darktrace vSensor for an existing VPC on AWS</div>
-</div>
-<div class="paragraph">
-<p>You can also deploy just the vSensor stack into your own exisiting VPC and subnets.</p>
-</div>
-<div class="paragraph">
-<p>The main <strong>vSensor Workload Stack</strong> provides the following resources:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Generated AMI containing the latest vSensor software at the time of building.</p>
-</li>
-<li>
-<p>An Auto-Scaling Group (ASG) of vSensor EC2 instances using the generated AMI, configured with a Launch Template. A multiple instance ASG configuration will allow for High Availability operation across 2 Availability Zones.</p>
-</li>
-<li>
-<p>CloudWatch Alarms that allow the ASG to resize and match traffic ingestion demand.</p>
-</li>
-<li>
-<p>CloudWatch Log Groups and metric collection from vSensors.</p>
-</li>
-<li>
-<p>Traffic Mirroring Filters and Target for allowing EC2 Instances to be mirrored.</p>
-</li>
-<li>
-<p>An Elastic Network Load Balancer (NLB) to distribute monitored traffic from Traffic Mirroring Sessions and osSensors across the ASG.</p>
-</li>
-<li>
-<p>An S3 Bucket to store mirrored traffic packets, to be queried by a Darktrace Master Appliance. The lifetime history of packets stored is configurable.</p>
-</li>
-</ul>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 <div class="sect1">
@@ -1141,20 +1078,8 @@ and <a href="https://aws.amazon.com/training/" target="_blank" rel="noopener">AW
 deploy, and operate your infrastructure and applications on the AWS Cloud.</p>
 </div>
 <div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/specialized_knowledge.adoc</code></strong></em></p>
-</div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p>This deployment guide also requires knowledge of the <strong>Darktrace vSensor</strong> and <strong>Enterprise Immune System</strong> products. Contact a Darktrace representative or visit the Darktrace Customer Portal if you need more information or training.</p>
-</div></div></td>
-</tr>
-</tbody>
-</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_aws_account">AWS account</h3>
@@ -1173,12 +1098,8 @@ deploy, and operate your infrastructure and applications on the AWS Cloud.</p>
 <div class="sect3">
 <h4 id="_resource_quotas">Resource quotas</h4>
 <div class="paragraph">
-<p>If necessary, request <a href="https://console.aws.amazon.com/servicequotas/home?region=us-east-2#!/" target="_blank" rel="noopener">service quota increases</a> for the following resources. You might request quota increases to avoid exceeding the default limits for any resources that are shared across multiple deployments. The <a href="https://console.aws.amazon.com/servicequotas/home?region=us-east-2#!/" target="_blank" rel="noopener">Service Quotas console</a> displays your usage and quotas for some aspects of some services. For more information, see <a href="https://docs.aws.amazon.com/servicequotas/latest/userguide/intro.html" target="_blank" rel="noopener">What is Service Quotas?</a> and <a href="https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html" target="_blank" rel="noopener">AWS service quotas</a>.</p>
+<p>If necessary, request <a href="https://console.aws.amazon.com/servicequotas/home?region=us-east-2#!/" target="_blank" rel="noopener">service quota increases</a> for the following resources. You might need to request increases if your existing deployment currently uses these resources and if this Quick Start deployment could result in exceeding the default quotas. The <a href="https://console.aws.amazon.com/servicequotas/home?region=us-east-2#!/" target="_blank" rel="noopener">Service Quotas console</a> displays your usage and quotas for some aspects of some services. For more information, see <a href="https://docs.aws.amazon.com/servicequotas/latest/userguide/intro.html" target="_blank" rel="noopener">What is Service Quotas?</a> and <a href="https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html" target="_blank" rel="noopener">AWS service quotas</a>.</p>
 </div>
-<div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/service_limits.adoc</code></strong></em></p>
-</div>
-<div class="preview_mode">
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 50%;">
@@ -1208,11 +1129,11 @@ deploy, and operate your infrastructure and applications on the AWS Cloud.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Lambdas</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AWS Lambdas</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">IAM roles</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AWS Identity and Access Management (IAM) roles</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">7</p></td>
 </tr>
 <tr>
@@ -1224,23 +1145,18 @@ deploy, and operate your infrastructure and applications on the AWS Cloud.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">t3.micro Instances (Bastion)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">t3.micro instances (bastion hosts)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vSensor Instances (Size Configurable)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vSensor instances (size-configurable)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1+</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-</div>
 <div class="sect3">
 <h4 id="_supported_regions">Supported Regions</h4>
-<div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/regions.adoc</code></strong></em></p>
-</div>
-<div id="preview_mode">
 <div class="paragraph">
 <p>The following table represents the regions that are currently supported by the Darktrace vSensor Quick Start.</p>
 </div>
@@ -1319,7 +1235,6 @@ deploy, and operate your infrastructure and applications on the AWS Cloud.</p>
 </tr>
 </tbody>
 </table>
-</div>
 <div class="admonitionblock tip">
 <table>
 <tr>
@@ -1338,19 +1253,33 @@ Certain Regions are available on an opt-in basis. For more information, see <a h
 <div class="paragraph">
 <p>Before launching the Quick Start, you must sign in to the AWS Management Console with IAM permissions for the resources that the templates deploy. The <em>AdministratorAccess</em> managed policy within IAM provides sufficient permissions, although your organization may choose to use a custom policy with more restrictions. For more information, see <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html" target="_blank" rel="noopener">AWS managed policies for job functions</a>.</p>
 </div>
-<div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/pre-reqs.adoc</code></strong></em></p>
 </div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="sect3">
-<h4 id="_prepare_your_darktrace_deployment">Prepare your Darktrace Deployment</h4>
+<div class="sect3">
+<h4 id="_register_a_push_token">Register a push token</h4>
 <div class="paragraph">
-<p>The vSensor deployment will use <strong>Push Token Mode</strong> to connect back to the Master Appliance. Be prepared to allow network access from your existing Master Appliance to your new vSensor deployment. This may require firewall configurations.</p>
+<p>Register a new push token to enable connection between vSensor probes and an existing Darktrace on-premise or cloud appliance. All of the vSensor instances in this deployment share the same push token.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log into the Darktrace console.</p>
+</li>
+<li>
+<p>On the main menu, choose <strong>Admin &gt; System Config</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Push Probe Tokens</strong> section, enter a label for the vSensor deployment.</p>
+</li>
+<li>
+<p>Choose <strong>Add</strong>. A token is generated in the form of <code>[label:string]</code>.</p>
+</li>
+<li>
+<p>Record the token, as it only displays once. You must enter the token in the <strong>Appliance push token</strong> <a href="#_parameter_reference">parameter</a> field during Quick Start deployment.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT Gateways after deployment. For more information, see <a href="#post-deployment-steps">Post deployment steps</a>, later in this guide.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1359,44 +1288,15 @@ Certain Regions are available on an opt-in basis. For more information, see <a h
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<strong>Darktrace Cloud Masters</strong> are already configured to allow this access.
+Darktrace cloud appliances are already configured to allow push token access, no firewall changes are necessary.
 </td>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>You will need to register a new <strong>Push Token</strong> to connect the vSensors to the Master. All vSensors in this Deployment will share this token.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Log into the Darktrace Master instance UI and navigate to the <em>System Config</em> page from the main menu. Locate the <em>Push Probe Tokens</em> section.</p>
-</li>
-<li>
-<p>Enter a label for the vSensor Deployment and click <em>Add</em> - a token will generate in the form of <em>[label:string]</em>. This token will be shown only once, please note it down for the deployment.</p>
-</li>
-<li>
-<p>The vSensor label is part of the token - to change the label, the token must be fully regenerated.</p>
-</li>
-</ul>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
 </div>
 <div class="sect3">
 <h4 id="_deployment_options">Deployment options</h4>
 <div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/deployment_options.adoc</code></strong></em></p>
-</div>
-<table class="tableblock frame-all grid-all stretch preview_mode">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p>This Quick Start provides two deployment options:</p>
 </div>
 <div class="ulist">
@@ -1411,10 +1311,7 @@ Certain Regions are available on an opt-in basis. For more information, see <a h
 </div>
 <div class="paragraph">
 <p>The Quick Start provides separate templates for these options. It also lets you configure Classless Inter-Domain Routing (CIDR) blocks, instance types, and vSensor settings, as discussed later in this guide.</p>
-</div></div></td>
-</tr>
-</tbody>
-</table>
+</div>
 </div>
 </div>
 </div>
@@ -1422,10 +1319,6 @@ Certain Regions are available on an opt-in basis. For more information, see <a h
 <div class="sect1">
 <h2 id="_deployment_steps">Deployment steps</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/deploy_steps.adoc</code></strong></em></p>
-</div>
-<div class="preview_mode">
 <div class="sect2">
 <h3 id="_sign_in_to_your_aws_account">Sign in to your AWS account</h3>
 <div class="olist arabic">
@@ -1504,13 +1397,8 @@ If you’re deploying Darktrace vSensor into an existing VPC, make sure that you
 <p>On the <strong>Create stack</strong> page, keep the default setting for the template URL, and then choose <strong>Next</strong>.</p>
 </li>
 <li>
-<p>On the <strong>Specify stack details</strong> page, change the stack name if needed. Review the parameters for the template. Provide values for the parameters that require input. For all other parameters, review the default settings and customize them as necessary. For details on each parameter, see the <a href="#_parameter_reference">Parameter reference</a> section of this guide. When you finish reviewing and customizing the parameters, choose <strong>Next</strong>.</p>
+<p>On the <strong>Specify stack details</strong> page, change the stack name if needed. Review the parameters for the template. Provide values for the parameters that require input. For all other parameters, review the default settings and customize them as necessary. For details on each parameter, see the <a href="#_parameter_reference">Parameter reference</a> section of this guide. When you finish reviewing and customizing the parameters, choose <strong>Next</strong>.</p>
 </li>
-</ol>
-</div>
-</div>
-<div class="olist arabic">
-<ol class="arabic" start="5">
 <li>
 <p>On the <strong>Configure stack options</strong> page, you can <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-resource-tags.html" target="_blank" rel="noopener">specify tags</a> (key-value pairs) for resources in your stack and <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html" target="_blank" rel="noopener">set advanced options</a>. When you’re finished, choose <strong>Next</strong>.</p>
 </li>
@@ -1524,20 +1412,10 @@ If you’re deploying Darktrace vSensor into an existing VPC, make sure that you
 <p>Monitor the status of the stack. When the status is <strong>CREATE_COMPLETE</strong>, the Darktrace vSensor deployment is ready.</p>
 </li>
 <li>
-<p>Use the values displayed in the <strong>Outputs</strong> tab for the stack, as shown in <a href="#cfn_outputs">Figure 3</a>, to view the created resources.</p>
+<p>To view the created resources, see the values displayed in the <strong>Outputs</strong> tab for the stack.</p>
 </li>
 </ol>
 </div>
-<div id="cfn_outputs" class="imageblock">
-<div class="content">
-<a class="image" href="images/cfn_outputs.png"><img src="images/cfn_outputs.png" alt="cfn_outputs" width="100%" height="100%"></a>
-</div>
-<div class="title">Figure 3. Darktrace vSensor outputs after successful deployment</div>
-</div>
-<div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/additional_info.adoc</code></strong></em></p>
-</div>
-<div class="preview_mode">
 </div>
 </div>
 </div>
@@ -1545,70 +1423,27 @@ If you’re deploying Darktrace vSensor into an existing VPC, make sure that you
 <h2 id="_post_deployment_steps">Post deployment steps</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_configuring_networking">Configuring Networking</h3>
+<h3 id="_configure_networking">Configure networking</h3>
 <div class="paragraph">
-<p>As specified earlier, if your Master Appliance is behind a firewall, access must now be allowed.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>If the New VPC deployment was chosen, access to the Master from the <strong>NAT Gateway Elastic IPs</strong> must be granted. These can be found in the <strong>Outputs</strong> as shown above.</p>
-</li>
-<li>
-<p>If the Existing VPC deployment was chosen, the IPs of the existing NAT Gateways for the subnets used must be allowed inbound to the Master.</p>
-</li>
-</ul>
+<p>If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the <strong>NatGatewayEIPs</strong> on the <strong>Outputs</strong> tab of the stack in the <a href="https://console.aws.amazon.com/cloudfront/home?" target="_blank" rel="noopener">AWS CloudFormation console</a>. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_configuring_mirroring_of_instances">Configuring Mirroring of Instances</h3>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This method is only compatible with new nitro generation AWS EC2 instances (c5/m5/r5 or t3) and select older instances. Older instances like t2.micro do not allow traffic mirroring and will require osSensors for traffic monitoring. Please see the relevant <a href="https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types" target="_blank" rel="noopener">AWS documentation </a> for more information.
-</td>
-</tr>
-</table>
+<h3 id="_configure_traffic_mirroring">Configure traffic mirroring</h3>
+<div class="paragraph">
+<p>To add your existing EC2 instances to be mirrored and monitored, configure a traffic mirror session. For more information, see <a href="https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html" target="_blank" rel="noopener">Traffic mirror sessions</a>. When doing this, use the traffic mirror target and filter IDs on the <strong>Outputs</strong> tab of the stack in the <a href="https://console.aws.amazon.com/cloudfront/home?" target="_blank" rel="noopener">AWS CloudFormation console</a>. You can automate the process of adding your existing EC2 instances to this deployment. For more information, contact your Darktrace representative for scripts and guidance to do this.</p>
 </div>
 <div class="paragraph">
-<p>If you wish to automate adding existing EC2 instances to your new deployment, your Darktrace representative can provide scripts and guidance to perform this.</p>
+<p>VPC Traffic Mirroring is only supported on AWS Nitro-based EC2 instance types and some non-Nitro instance types. For more information, see <a href="https://aws.amazon.com/about-aws/whats-new/2021/02/amazon-vpc-traffic-mirroring-supported-select-non-nitro-instance-types" target="_blank" rel="noopener">Amazon VPC Traffic Mirroring is now supported on select non-Nitro instance types</a>.</p>
 </div>
 <div class="paragraph">
-<p>To add EC2 instances for Traffic Mirroring, see <a href="https://docs.aws.amazon.com/vpc/latest/mirroring/traffic-mirroring-session.html" target="_blank" rel="noopener">this guide</a>. The Traffic Mirror Target and Filter IDs are provided in the <strong>Output</strong> section (shown above).</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_configuring_ossensors">Configuring osSensors</h3>
-<div class="paragraph">
-<p>To configure osSensors to be monitored by this Deployment, please use the Public IP / DNS hostname of the Elastic Network Load Balancer. These are shown in the <strong>Outputs</strong> section, as shown above.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Guides for configuring osSensors are available on the Darktrace Customer Portal.
-</td>
-</tr>
-</table>
+<p>To monitor EC2 instance types that do not support VPC Traffic Mirroring, configure them with Darktrace osSensors. When doing this, use the DNS name of the Network Load Balancer on the <strong>Outputs</strong> tab of the stack in the <a href="https://console.aws.amazon.com/cloudfront/home?" target="_blank" rel="noopener">CloudFormation console</a>. For more information about configuring osSensors, visit the <a href="https://customerportal.darktrace.com/login" target="_blank" rel="noopener">Darktrace Customer Portal</a>.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_test_the_deployment">Test the deployment</h3>
 <div class="paragraph">
-<p>This Quick Start should only complete successfully if the parameters fit the correct format and the <strong>Update Key</strong> and <strong>Push Token</strong> are valid.</p>
-</div>
-<div class="paragraph">
-<p>Once the deployment has completed, the Master UI <em>System Config</em> / <em>Push Tokens</em> section should display the expected number of probes connected.</p>
-</div>
-<div class="paragraph">
-<p>Once EC2 Instances have been configured for Traffic Mirroring above, these instances should appear inside the Threat Visualiser.</p>
+<p>After deployment, verify that all vSensors are listed in the <strong>Probes</strong> section of the <strong>System Config</strong> screen in the <a href="https://www.darktrace.com/en/threat-visualization/" target="_blank" rel="noopener">Darktrace Threat Visualizer</a>. After adding the Traffic Mirror Sessions of EC2 instances that you wish to monitor, or configured osSensors to communicate with the vSensors, verify that they display in the Threat Visualizer.</p>
 </div>
 </div>
 </div>
@@ -1616,26 +1451,29 @@ Guides for configuring osSensors are available on the Darktrace Customer Portal.
 <div class="sect1">
 <h2 id="_security">Security</h2>
 <div class="sectionbody">
-<div class="sect3">
-<h4 id="_network_security">Network Security</h4>
+<div class="sect2">
+<h3 id="_network_security">Network security</h3>
 <div class="paragraph">
-<p>The default network security setup of this solution follows AWS security best practices. The provisioned Darktrace vSensor instances are deployed in private subnets and can only be accessed via SSH via the Bastion.</p>
-</div>
-<div class="paragraph">
-<p>For existing VPC deployments, it is important for the <strong>Security Groups</strong> defined by the customer allow only required access for SSH from trusted sources. It is not recommended to allow direct SSH access to vSensors from the internet.</p>
+<p>This deployment follows AWS security best practices for network security. The vSensor instances are deployed in private subnets. They are only accessible from the internet using SSH to connect to bastion hosts in the private subnets. For existing VPC deployments, it is important that security groups only allow SSH access from trusted sources. It is not recommended to allow direct SSH access to vSensors from the internet. For more information, see <a href="https://aws.amazon.com/architecture/security-identity-compliance/?cards-all.sort-by=item.additionalFields.sortDate&amp;cards-all.sort-order=desc&amp;awsf.content-type=*all&amp;awsf.methodology=*all" target="_blank" rel="noopener">Best Practices for Security, Identity, &amp; Compliance</a>.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_os_security">OS Security</h4>
+<div class="sect2">
+<h3 id="_os_security">OS security</h3>
 <div class="paragraph">
-<p>To gain root access to your vSensor instances you may use <code>ubuntu</code> user and then sudo to root. The key-pair provided during deployment will be required to access the <code>ec2-user</code> of the Bastion and <code>ubuntu</code> user of vSensors.</p>
+<p>To gain root access to vSensor instances, use the <code>ubuntu</code> user name and the EC2 key pair <a href="#_parameter_reference">parameter</a> you entered during deployment as the private key path. Then sudo to root. The EC2 key pair is also required to access <code>ec2-user</code> of the bastion hosts. For more information, see <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html" target="_blank" rel="noopener">Connect to your Linux instance using SSH</a>.</p>
 </div>
 <div class="paragraph">
-<p>Deployed Bastions are set to automatically update.
-The deployed vSensors are configured to update daily from the Darktrace and Ubuntu package repositories for the latest security and product updates.</p>
+<p>The bastion hosts deployed by this Quick Start are set to update automatically. The deployed vSensors are configured to receive the latest security and product updates daily from Darktrace and Ubuntu package repositories.</p>
 </div>
-<div class="sect4">
-<h5 id="_aws_services">AWS Services</h5>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_additional_resources">Additional resources</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>AWS services</strong></p>
+</div>
 <div class="ulist">
 <ul>
 <li>
@@ -1643,46 +1481,40 @@ The deployed vSensors are configured to update daily from the Darktrace and Ubun
 <div class="ulist">
 <ul>
 <li>
-<p>Documentation: <a href="https://aws.amazon.com/documentation/cloudformation/" class="bare">https://aws.amazon.com/documentation/cloudformation/</a></p>
+<p><a href="https://aws.amazon.com/documentation/cloudformation/" target="_blank" rel="noopener">AWS CloudFormation Documentation</a></p>
 </li>
 <li>
-<p>Helper scripts: <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-helper-scripts-reference.html" class="bare">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-helper-scripts-reference.html</a></p>
+<p><a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-helper-scripts-reference.html" target="_blank" rel="noopener">CloudFormation helper scripts reference</a></p>
 </li>
 </ul>
 </div>
 </li>
 <li>
-<p>Amazon EC2 user guide for Linux <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/" class="bare">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/</a></p>
+<p><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/" target="_blank" rel="noopener">What is Amazon EC2?</a></p>
 </li>
 <li>
-<p>Amazon S3 <a href="https://aws.amazon.com/documentation/s3/" class="bare">https://aws.amazon.com/documentation/s3/</a></p>
+<p><a href="https://aws.amazon.com/documentation/s3/" target="_blank" rel="noopener">Amazon Simple Storage Service Documentation</a></p>
 </li>
 <li>
-<p>Amazon VPC <a href="https://aws.amazon.com/documentation/vpc/" class="bare">https://aws.amazon.com/documentation/vpc/</a></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect4">
-<h5 id="_darktrace">Darktrace</h5>
-<div class="ulist">
-<ul>
-<li>
-<p>Darktrace <a href="https://darktrace.com" class="bare">https://darktrace.com</a></p>
+<p><a href="https://aws.amazon.com/documentation/vpc/" target="_blank" rel="noopener">Amazon Virtual Private Cloud Documentation</a></p>
 </li>
 <li>
-<p>Darktrace Customer Portal <a href="https://customerportal.darktrace.com" class="bare">https://customerportal.darktrace.com</a></p>
-</li>
-<li>
-<p>Darktrace Customer Portal vSensor Guides <a href="https://customerportal.darktrace.com/product-guides/main/vsensor-introduction" class="bare">https://customerportal.darktrace.com/product-guides/main/vsensor-introduction</a></p>
+<p><a href="https://aws.amazon.com/blogs/networking-and-content-delivery/using-vpc-traffic-mirroring-to-monitor-and-secure-your-aws-infrastructure/">Using VPC Mirroring to monitor and secure your AWS infrastructure</a></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p><em><strong>This portion of the deployment guide is located at <code>docs/partner_editable/faq_troubleshooting.adoc</code></strong></em></p>
+<p><strong>Darktrace</strong></p>
 </div>
-<div class="preview_mode">
-</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://darktrace.com" target="_blank" rel="noopener">Darktrace</a></p>
+</li>
+<li>
+<p><a href="https://customerportal.darktrace.com" target="_blank" rel="noopener">Darktrace Customer Portal</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -1714,8 +1546,15 @@ When you set <strong>Rollback on failure</strong> to <strong>Disabled</strong>, 
 <p><strong>Q.</strong> I encountered a size limitation error when I deployed the AWS CloudFormation templates.</p>
 </div>
 <div class="paragraph">
-<p><strong>A.</strong> We recommend that you launch the Quick Start templates from the links in this guide or from another S3 bucket. If you deploy the templates from a local copy on your computer or from a location other than an S3 bucket, you might encounter template size limitations. For more information about AWS CloudFormation quotas, see the <a href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html" target="_blank" rel="noopener">AWS documentation</a>.</p>
+<p><strong>A.</strong> We recommend that you launch the Quick Start templates from the links in this guide or from another S3 bucket. If you deploy the templates from a local copy on your computer or from a location other than an S3 bucket, you might encounter template size limitations. For more information about AWS CloudFormation quotas, see the <a href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html" target="_blank" rel="noopener">AWS CloudFormation quotas</a>.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_customer_responsibility">Customer responsibility</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After you successfully deploy this Quick Start, confirm that your resources and services are updated and configured — including any required patches — to meet your security and other needs. For more information, see the <a href="https://aws.amazon.com/compliance/shared-responsibility-model/" target="_blank" rel="noopener">AWS Shared Responsibility Model</a>.</p>
 </div>
 </div>
 </div>
@@ -1729,8 +1568,7 @@ When you set <strong>Rollback on failure</strong> to <strong>Disabled</strong>, 
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Unless you are customizing the Quick Start templates for your own deployment projects, we recommend that you keep the default settings for the parameters labeled <code>Quick Start S3 bucket name</code>, <code>Quick Start S3 bucket
-Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parameter settings automatically updates code references to point to a new Quick Start location. For more information, see the <a href="https://aws-quickstart.github.io/option1.html" target="_blank" rel="noopener">AWS Quick Start Contributor’s Guide</a>.
+Unless you are customizing the Quick Start templates for your own deployment projects, keep the default settings for the parameters labeled <strong>Quick Start S3 bucket name</strong>, <strong>Quick Start S3 bucket Region</strong>, and <strong>Quick Start S3 key prefix</strong>. Changing these parameter settings automatically updates code references to point to a new Quick Start location. For more information, see the <a href="https://aws-quickstart.github.io/option1.html" target="_blank" rel="noopener">AWS Quick Start Contributor’s Guide</a>.
 </td>
 </tr>
 </table>
@@ -1738,7 +1576,7 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <div class="sect2">
 <h3 id="_launch_into_a_new_vpc">Launch into a new VPC</h3>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. Network Configuration</caption>
+<caption class="title">Table 2. Network configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -1756,7 +1594,7 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <td class="tableblock halign-left valign-top"><p class="tableblock">Availability Zones
 (<code>AvailabilityZones</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">List the Availability Zones that the vSensor should be launched in</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Availability Zones to use for the subnets in the VPC. Two Availability Zones are used for this deployment.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VPC CIDR
@@ -1768,36 +1606,36 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <td class="tableblock halign-left valign-top"><p class="tableblock">Private subnet 1 CIDR
 (<code>PrivateSubnet1CIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>10.0.0.0/19</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for private subnet 1 located in Availability Zone 1.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for private subnet 1, located in Availability Zone 1.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Private subnet 2 CIDR
 (<code>PrivateSubnet2CIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>10.0.32.0/19</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for private subnet 2 located in Availability Zone 2.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for private subnet 2, located in Availability Zone 2.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Public subnet 1 CIDR
 (<code>PublicSubnet1CIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>10.0.128.0/20</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for the public (DMZ) subnet 1 located in Availability Zone 1.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for the public (DMZ) subnet 1, located in Availability Zone 1.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Public subnet 2 CIDR
 (<code>PublicSubnet2CIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>10.0.144.0/20</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for the public (DMZ) subnet 2 located in Availability Zone 2.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR block for the public (DMZ) subnet 2, located in Availability Zone 2.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Allowed bastion external access CIDR
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bastion host CIDR
 (<code>RemoteAccessCIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR IP range that is permitted to access the bastions. We recommend that you set this value to a trusted IP range.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR IP range that is permitted to access the bastion hosts. We recommend that you set this value to a trusted IP range.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 3. Bastion Configuration</caption>
+<caption class="title">Table 3. Bastion configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -1812,10 +1650,10 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Bastion instance type
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bastion host instance type
 (<code>BastionInstanceType</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>t3.micro</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Amazon EC2 instance type for the bastion instances.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Amazon EC2 instance type for the bastion hosts.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Key pair name
@@ -1824,15 +1662,15 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <td class="tableblock halign-left valign-top"><p class="tableblock">Name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Bastion AMI operating system
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bastion host AMI operating system
 (<code>BastionAMIOS</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Amazon-Linux2-HVM</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Linux distribution for the AMI to be used for the bastion instances.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Linux distribution for the Amazon Machine Image (AMI) used for the bastion host instances.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 4. Appliance Configuration</caption>
+<caption class="title">Table 4. Darktrace appliance configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -1847,27 +1685,27 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance Hostname
+<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance host name
 (<code>VSensorApplianceHostname</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which Appliance should this vSensor connect to?</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host name of the Darktrace appliance.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance Port
+<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance port
 (<code>VSensorAppliancePort</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>443</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which port should the vSensor connect to the Appliance on?</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Connection port between vSensor and the Darktrace appliance.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance Push Token
+<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance push token
 (<code>VSensorAppliancePushtoken</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Push token to authenticate with the Appliance. Generate this from the Appliance&#8217;s Config menu.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Push token to authenticate with the appliance. For more information, see the <a href="https://customerportal.darktrace.com/login">Darktrace Customer Portal</a>.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 5. vSensor Configuration</caption>
+<caption class="title">Table 5. Darktrace vSensor configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -1882,51 +1720,51 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 Instance Type
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 instance type
 (<code>VSensorInstanceType</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>t3.medium</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 instance type. Default is t3.medium</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 instance type. Default is <code>t3.medium</code>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Key pair name
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 key pair name
 (<code>VSensorKeyPairName</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which EC2 Key-pair should be used to connect to the vSensor?</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 key pair to use to connect to vSensor.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Update Key
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update key
 (<code>VSensorUpdatekey</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>XXXXXX:XXXX</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Darktrace update key. If you don&#8217;t have one, contact your Darktrace representative.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Desired vSensor instance capacity
 (<code>VSensorDesiredCapacityASG</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>1</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Desired number of vSensor instances within the auto-scaling group.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Desired number of vSensor instances in the Auto-Scaling group.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Minimum vSensor instance capacity
 (<code>VSensorMinSizeASG</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>1</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum number of vSensor instances within the auto-scaling group.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum number of vSensor instances in the Auto-Scaling group.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Maximum vSensor instance capacity
 (<code>VSensorMaxSizeASG</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>5</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum number of vSensor instances within the auto-scaling group.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum number of vSensor instances in the Auto-Scaling group.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">osSensor HMAC Token
 (<code>VSensorOsSensorHMAC</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Blank string</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HMAC Token to authenticate osSensors with the vSensor.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 6. Traffic Mirroring Configuration</caption>
+<caption class="title">Table 6. VPC Traffic Mirror configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -1941,27 +1779,27 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rule number for Traffic Mirror Rule
+<td class="tableblock halign-left valign-top"><p class="tableblock">Traffic Mirror rule number
 (<code>VSensorTrafficMirrorRuleNumber</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>100</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">What number for the traffic mirror filter rule</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enter a priority to assign to the rule.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
 (<code>VSensorTrafficMirrorSourceCIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>0.0.0.0/0</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source CIDR for the Traffic Mirror filter. Enter <code>0.0.0.0/0</code> for all traffic.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
+<td class="tableblock halign-left valign-top"><p class="tableblock">Destination traffic CIDR to filter (0.0.0.0/0 for all traffic)
 (<code>VSensorTrafficMirrorDestCIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>0.0.0.0/0</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Dest CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Destination CIDR for the Traffic Mirror filter. Enter <code>0.0.0.0/0</code> for all traffic.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 7. Logs &amp; PCAPS Configuration</caption>
+<caption class="title">Table 7. Logs and captured packet retention</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -1976,16 +1814,16 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CloudWatch Log Retention (Days)
+<td class="tableblock halign-left valign-top"><p class="tableblock">CloudWatch logs retention (days)
 (<code>VSensorLogGroupRetention</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>30</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Select the number of days logs should be kept in CloudWatch</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of days to retain Cloudwatch logs.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PCAP Storage Lifecycle (Days)
+<td class="tableblock halign-left valign-top"><p class="tableblock">Captured packets storage retention (days)
 (<code>VSensorLifecycleS3BucketDays</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>7</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Enter the number of days Packet Captures (PCAPs) should be kept for in S3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of days to retain captured packets in Amazon S3.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2008,25 +1846,25 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 bucket name
 (<code>QSS3BucketName</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>aws-quickstart</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">S3 bucket name for the Quick Start assets. This string can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Name of the S3 bucket for your copy of the Quick Start assets. Keep the default name unless you are customizing the template. Changing the name updates code references to point to a new Quick Start location. This name can include numbers, lowercase letters, uppercase letters, and hyphens, but do not start or end with a hyphen (-). See <a href="https://aws-quickstart.github.io/option1.html" class="bare">https://aws-quickstart.github.io/option1.html</a>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 bucket region
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 bucket Region
 (<code>QSS3BucketRegion</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>eu-east-1</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>us-east-1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. Keep the default Region unless you are customizing the template. Changing this Region updates code references to point to a new Quick Start location. When using your own bucket, specify the Region. See <a href="https://aws-quickstart.github.io/option1.html" class="bare">https://aws-quickstart.github.io/option1.html</a>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 Key Prefix
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 key prefix
 (<code>QSS3KeyPrefix</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>quickstart-darktrace-vsensor/</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">S3 key prefix that is used to simulate a directory for your copy of the Quick Start assets. Keep the default prefix unless you are customizing the template. Changing this prefix updates code references to point to a new Quick Start location. This prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slashes (/). End with a forward slash. See <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html" class="bare">https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html</a> and <a href="https://aws-quickstart.github.io/option1.html" class="bare">https://aws-quickstart.github.io/option1.html</a>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start Unique Run ID (12 chars or less)
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start unique run ID (12 characters or less)
 (<code>ShortID</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Blank string</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">QuickStart short unique ID, used to identify resources from other installations of this Quickstart. If left empty, a random string is generated.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start short unique ID used to identify resources from other installations of this Quick Start. If left empty, a random string is generated.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2034,7 +1872,7 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <div class="sect2">
 <h3 id="_launch_into_an_existing_vpc">Launch into an existing VPC</h3>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 9. Appliance Configuration</caption>
+<caption class="title">Table 9. Darktrace appliance configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -2049,27 +1887,27 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance Hostname
+<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance host name
 (<code>ApplianceHostname</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which Appliance should this vSensor connect to?</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host name of the Darktrace appliance.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance Port
+<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance port
 (<code>AppliancePort</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>443</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which port should the vSensor connect to the Appliance on?</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Connection port between vSensor and the Darktrace appliance.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance Push Token
+<td class="tableblock halign-left valign-top"><p class="tableblock">Appliance push token
 (<code>AppliancePushtoken</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Push token to authenticate with the Appliance. Generate this from the Appliance&#8217;s Config menu.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Push token to authenticate with the appliance. For more information, see the <a href="https://customerportal.darktrace.com/login">Darktrace Customer Portal</a>.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 10. vSensor Configuration</caption>
+<caption class="title">Table 10. Darktrace vSensor configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -2084,57 +1922,57 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 Instance Type
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 instance type
 (<code>InstanceType</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>t3.medium</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 instance type. Default is t3.medium</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 instance type. Default is <code>t3.medium</code>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 Key-pair Name
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 key pair Name
 (<code>KeyPairName</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which EC2 Key-pair should be used to connect to the vSensor?</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EC2 key pair to use to connect to vSensor.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Security Groups
+<td class="tableblock halign-left valign-top"><p class="tableblock">Security groups
 (<code>InstanceSecurityGroups</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which AWS Security Group IDs would you like to apply for the vSensor? Note that a basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Darktrace vSensor security group IDs. A basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be added by this cloudformation.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Update Key
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update key
 (<code>VsensorUpdatekey</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>XXXXXX:XXXX</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Darktrace update key. If you don&#8217;t have one, contact your Darktrace representative.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Desired vSensor instance capacity
 (<code>DesiredCapacityASG</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>1</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Desired number of vSensor instances within the auto-scaling group.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Desired number of vSensor instances in the Auto-Scaling group.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Minimum vSensor instance capacity
 (<code>MinSizeASG</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>1</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum number of vSensor instances within the auto-scaling group.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum number of vSensor instances in the Auto-Scaling group.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Maximum vSensor instance capacity
 (<code>MaxSizeASG</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>5</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum number of vSensor instances within the auto-scaling group.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum number of vSensor instances in the Auto-Scaling group.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">osSensor HMAC Token
 (<code>osSensorHMAC</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Blank string</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HMAC Token to authenticate osSensors with the vSensor.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 11. Networking Configuration</caption>
+<caption class="title">Table 11. Network configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -2152,19 +1990,19 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <td class="tableblock halign-left valign-top"><p class="tableblock">Deployment VPC
 (<code>DeploymentVPC</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Requires input</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">VPC of target deployment</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VPC of target deployment.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">VPC CDIR Block
+<td class="tableblock halign-left valign-top"><p class="tableblock">VPC CIDR block
 (<code>VpcCIDRBlock</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>172.16.0.0/12</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR Block of VPC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VPC CIDR block.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">SSH CDIR Block
+<td class="tableblock halign-left valign-top"><p class="tableblock">SSH CIDR block
 (<code>SshCIDRBlock</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>172.16.0.0/12</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CIDR Block of allowed SSH Access to vSensors.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allowed CIDR block for SSH (Secure Shell) access to vSensor.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Subnets
@@ -2175,7 +2013,7 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 12. Traffic Mirror Configuration</caption>
+<caption class="title">Table 12. VPC Traffic Mirror configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -2190,27 +2028,27 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rule number for Traffic Mirror Rule
+<td class="tableblock halign-left valign-top"><p class="tableblock">Traffic Mirror rule number
 (<code>TrafficMirrorRuleNumber</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>100</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">What number for the traffic mirror filter rule</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enter a priority to assign to the rule.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Source traffic CIDR to filter (0.0.0.0/0 for all traffic)
 (<code>TrafficMirrorSourceCIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>0.0.0.0/0</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Source CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source CIDR for the Traffic Mirror filter. Enter <code>0.0.0.0/0</code> for all traffic.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Dest traffic CIDR to filter (0.0.0.0/0 for all traffic)
+<td class="tableblock halign-left valign-top"><p class="tableblock">Destination traffic CIDR to filter (0.0.0.0/0 for all traffic)
 (<code>TrafficMirrorDestCIDR</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>0.0.0.0/0</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Dest CIDR for Traffic Mirror Filter (0.0.0.0/0 for all traffic)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Destination CIDR for the Traffic Mirror filter. Enter <code>0.0.0.0/0</code> for all traffic.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 13. Logs &amp; PCAPS Configuration</caption>
+<caption class="title">Table 13. Logs and captured packet retention</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -2225,21 +2063,21 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CloudWatch Log Retention (Days)
+<td class="tableblock halign-left valign-top"><p class="tableblock">CloudWatch logs retention (days)
 (<code>LogGroupRetention</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>30</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Select the number of days logs should be kept in CloudWatch</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of days to retain Cloudwatch logs.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PCAP Storage Lifecycle (Days)
+<td class="tableblock halign-left valign-top"><p class="tableblock">Captured packets storage retention (days)
 (<code>LifecycleS3BucketDays</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>7</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Enter the number of days Packet Captures (PCAPs) should be kept for in S3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of days to retain captured packets in Amazon S3.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 14. Quickstart Config</caption>
+<caption class="title">Table 14. Quick Start configuration</caption>
 <colgroup>
 <col style="width: 16%;">
 <col style="width: 11%;">
@@ -2257,25 +2095,25 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 bucket name
 (<code>QSS3BucketName</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>aws-quickstart</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">S3 bucket name for the Quick Start assets. This string can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Name of the S3 bucket for your copy of the Quick Start assets. Keep the default name unless you are customizing the template. Changing the name updates code references to point to a new Quick Start location. This name can include numbers, lowercase letters, uppercase letters, and hyphens, but do not start or end with a hyphen (-). See <a href="https://aws-quickstart.github.io/option1.html" class="bare">https://aws-quickstart.github.io/option1.html</a>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 bucket region
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 bucket Region
 (<code>QSS3BucketRegion</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>eu-east-1</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>us-east-1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. Keep the default Region unless you are customizing the template. Changing this Region updates code references to point to a new Quick Start location. When using your own bucket, specify the Region. See <a href="https://aws-quickstart.github.io/option1.html" class="bare">https://aws-quickstart.github.io/option1.html</a>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 Key Prefix
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start S3 key prefix
 (<code>QSS3KeyPrefix</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>quickstart-darktrace-vsensor/</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">S3 key prefix that is used to simulate a directory for your copy of the Quick Start assets. Keep the default prefix unless you are customizing the template. Changing this prefix updates code references to point to a new Quick Start location. This prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slashes (/). End with a forward slash. See <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html" class="bare">https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html</a> and <a href="https://aws-quickstart.github.io/option1.html" class="bare">https://aws-quickstart.github.io/option1.html</a>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Quickstart Short Unique ID
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start unique run ID (12 characters or less)
 (<code>ShortID</code>)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong><em>Blank string</em></strong></code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">QuickStart short unique ID, used to identify resources from other installations of this Quickstart. If left empty, a random string is generated.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Start short unique ID used to identify resources from other installations of this Quick Start. If left empty, a random string is generated.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2286,7 +2124,7 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <h2 id="_send_us_feedback">Send us feedback</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To post feedback, submit feature ideas, or report bugs, use the <strong>Issues</strong> section of the <a href="https://github.com/aws-quickstart/quickstart-documentation-base" target="_blank" rel="noopener">GitHub repository</a> for this Quick Start. To submit code, see the <a href="https://aws-quickstart.github.io/" target="_blank" rel="noopener">Quick Start Contributor’s Guide</a>.</p>
+<p>To post feedback, submit feature ideas, or report bugs, use the <strong>Issues</strong> section of the <a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor" target="_blank" rel="noopener">GitHub repository</a> for this Quick Start. To submit code, see the <a href="https://aws-quickstart.github.io/" target="_blank" rel="noopener">Quick Start Contributor’s Guide</a>.</p>
 </div>
 </div>
 </div>
@@ -2302,7 +2140,7 @@ Region</code>, and <code>Quick Start S3 key prefix</code>. Changing these parame
 <h2 id="_github_repository">GitHub repository</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Visit our <a href="https://github.com/aws-quickstart/quickstart-documentation-base" target="_blank" rel="noopener">GitHub repository</a> to download
+<p>Visit our <a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor" target="_blank" rel="noopener">GitHub repository</a> to download
 the templates and scripts for this Quick Start, to post your comments,
 and to share your customizations with others.</p>
 </div>

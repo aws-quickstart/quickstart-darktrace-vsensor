@@ -526,7 +526,6 @@ Resources:
               function exittrap() {
                   exitcode="$?"
                   set +e
-                  INSTANCE_ID="`wget -q -O - http://instance-data/latest/meta-data/instance-id`"
                   if [ "$exitcode" -gt 0 ]; then
                       echo "Failed to successfully configure vSensor, more details in /var/log/user-data.log"
                       aws autoscaling complete-lifecycle-action --lifecycle-action-result ABANDON --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region} 
@@ -538,12 +537,16 @@ Resources:
               }
 
               touch /etc/darktrace/.userdata-started
-              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+              exec > >(tee -a /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
               trap "exittrap" EXIT
 
               # See https://youtu.be/unMiTRw8JVE for an example on how to review this console output.
               echo "Starting userdata"
+
+              echo "Getting instance ID and attempt to disable source-dest checking metadata."
+              INSTANCE_ID=$(ec2metadata --instance-id)
+              aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $INSTANCE_ID --region ${AWS::Region} || echo "Failed to set source-dest. Continuing anyway." # Not serious if this doesn't succeed.
 
               echo "Running firstboot scripts"
               /usr/lib/inithooks/firstboot.d/15random-uuid
@@ -553,6 +556,7 @@ Resources:
               echo "Setting configuration"
               #set updatekey, upgrade and enable daily updates
               set_updatekey.sh ${VsensorUpdatekey}
+              sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a EphemeralProbe=true" /etc/sabreserver/local_lite.cfg # Configure vSensor for use in ASG.
               sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
               set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
               sleep 5
@@ -560,7 +564,6 @@ Resources:
                 set_ossensor_hmac.sh ${osSensorHMAC}
                 sleep 5
               fi
-              # If using dummy appliance, using for CI, don't enable PCAP storage to allow successful bucket deletion.
               set_pcap_s3_bucket.sh ${PCAPS}
               sleep 5
               touch /etc/darktrace/.userdata-config-complete
@@ -881,6 +884,10 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
       LifecycleConfiguration:
         Rules:
           - Id: !Sub 'DeleteAfter${LifecycleS3BucketDays}Days'
@@ -1161,6 +1168,14 @@ Resources:
                   - AutoScalingGroupName: !Sub
                     - "${ShortID}-vSensor-ASG"
                     - ShortID: !GetAtt ShortIDRand.IDString
+        - PolicyName: "AllowSourceDestCheckModificationPolicy"
+          PolicyDocument:
+            Statement:
+            - Effect: "Allow"
+              Action: "ec2:ModifyInstanceAttribute"
+              Resource: !Sub
+                - "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
+                - SecurityGroup: !GetAtt SecurityGroupvSensor.GroupId
 
 Outputs:
   BucketName:

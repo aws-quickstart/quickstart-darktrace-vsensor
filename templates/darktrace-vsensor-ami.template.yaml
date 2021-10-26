@@ -18,6 +18,7 @@ Metadata:
           - VsensorUpdatekey
           - LogGroupName
           - KeyPairName
+          - VPCSubnetId
     ParameterLabels:
       TargetAmiSSMName:
         default: Name for newly created AMI
@@ -29,6 +30,8 @@ Metadata:
         default: CloudWatch Log Group
       KeyPairName:
         default: EC2 Key-pair Name
+      VPCSubnetId:
+        default: VPC Subnet ID for vSensor AMI generation
 
 Parameters:
   TargetAmiSSMName:
@@ -48,6 +51,9 @@ Parameters:
   KeyPairName:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Description: Which EC2 Key-pair should be used to connect to the vSensor?
+  VPCSubnetId:
+    Type: 'AWS::EC2::Subnet::Id'
+    Description: Which VPC should the AMI EC2 Instance be created in?
 
 # Ubuntu 20.04 Base AMIs
 Mappings:
@@ -276,6 +282,7 @@ Resources:
               - "apt update"
               - "apt install -y awscli"
               - !Sub "aws ssm start-automation-execution --document-name ${SsmAMIBuild} --region ${AWS::Region}"
+      SubnetId: !Ref VPCSubnetId
 
   SsmAMIBuild:
     Metadata:

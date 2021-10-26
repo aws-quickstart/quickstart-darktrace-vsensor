@@ -388,6 +388,10 @@ Resources:
             - "${ShortID}-vSensor-Logs"
             - ShortID: !GetAtt ShortIDRand.IDString
         KeyPairName: !Ref KeyPairName
+        VPCSubnetId:
+          !Select
+            - 0
+            - !Ref Subnets
       Tags:
         - Key: "Name"
           Value:

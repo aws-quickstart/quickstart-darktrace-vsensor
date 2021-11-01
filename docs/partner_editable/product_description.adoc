@@ -6,7 +6,7 @@ This Quick Start deploys Darktrace vSensor virtual threat detection on the Amazo
 
 Amazon Virtual Private Cloud (VPC) traffic mirroring copies traffic from Amazon Elastic Compute Cloud (Amazon EC2) instances you want to monitor. A Network Load Balancer distributes mirrored traffic to Darktrace vSensor probes in private subnets. The deployment also supports sending data to vSensors from Darktrace osSensors you configure on virtual machines, containerized applications, and legacy EC2 instance types that do not support traffic mirroring.
 
-Darktrace vSensor extracts relevant metadata from mirrored traffic and stores it in an Amazon Simple Storage Service (Amazon S3) bucket. A Darktrace appliance analyzes the metadata using Darktrace's Enterprise Immune System to build metrics it uses to identify threats.
+Darktrace vSensor extracts relevant metadata from mirrored traffic and stores it in an Amazon Simple Storage Service (Amazon S3) bucket. Your existing Darktrace deployment analyzes the metadata using Darktrace's Enterprise Immune System to build metrics it uses to identify threats.
 
 Darktrace vSensors support syslog to https://www.darktrace.com/en/integrations/[integrate^] with third-party security information and event management tools.
 

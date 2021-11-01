@@ -9,6 +9,7 @@
 :deployment_time: 30 minutes / 1 hour
 :default_deployment_region: us-east-1
 :parameters_as_appendix: yes
+:control_tower:
 // Uncomment these two attributes if you are leveraging
 // - an AWS Marketplace listing.
 // Additional content will be auto-generated based on these attributes.

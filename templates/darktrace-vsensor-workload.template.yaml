@@ -852,6 +852,23 @@ Resources:
       TargetType: 'instance'
       VpcId: !Ref DeploymentVPC
 
+  TargetGroupTCP80:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties: 
+      Name:
+        !Sub
+          - "${ShortID}-vSensor-ASG-TCP80"
+          - ShortID: !GetAtt ShortIDRand.IDString
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: '80'
+      HealthCheckProtocol: HTTP
+      Port: 80
+      Protocol: 'TCP'
+      TargetType: 'instance'
+      VpcId: !Ref DeploymentVPC
+
   ASG:
     DependsOn: PCAPCleanupBucketOnDelete # Such that on deletion, the ASG is removed before emptying S3.
     Type: 'AWS::AutoScaling::AutoScalingGroup'
@@ -865,6 +882,7 @@ Resources:
       TargetGroupARNs: 
         - !Ref TargetGroupUDP4789
         - !Ref TargetGroupTCP443
+        - !Ref TargetGroupTCP80
       LaunchTemplate:
         Version: !GetAtt 
           - LaunchTemplate
@@ -1104,6 +1122,16 @@ Resources:
          TargetGroupArn: !Ref TargetGroupTCP443
       LoadBalancerArn: !Ref LoadBalancer
       Port: 443
+      Protocol: 'TCP'
+
+  LoadBalancerListenerTCP80:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      DefaultActions: 
+       - Type: "forward"
+         TargetGroupArn: !Ref TargetGroupTCP80
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
       Protocol: 'TCP'
 
 

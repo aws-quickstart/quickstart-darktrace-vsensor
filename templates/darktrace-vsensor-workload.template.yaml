@@ -533,9 +533,6 @@ Resources:
                   if [ "$exitcode" -gt 0 ]; then
                       echo "Failed to successfully configure vSensor, more details in /var/log/user-data.log"
                       aws autoscaling complete-lifecycle-action --lifecycle-action-result ABANDON --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region} 
-                  else
-                      echo "Successful configuration of vSensor."
-                      aws autoscaling complete-lifecycle-action --lifecycle-action-result CONTINUE --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region}
                   fi
                   exit "$exitcode"
               }
@@ -717,6 +714,9 @@ Resources:
               echo "Cloudwatch configuration complete."
               service confconsole restart || true # To update AWS screenshot with current config.
               touch /etc/darktrace/.userdata-confconsole-restart
+              echo "Successful configuration of vSensor. Telling AWS vSensor is ready for ASG, without waiting for upgrades."
+              aws autoscaling complete-lifecycle-action --lifecycle-action-result CONTINUE --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region}
+              touch /etc/darktrace/.userdata-sent-success
               repo-control.sh -nevua ${VsensorUpdatekey} || true
               touch /etc/darktrace/.userdata-completed
               echo "Update configuration checks complete"
@@ -761,7 +761,7 @@ Resources:
           - ShortID: !GetAtt ShortIDRand.IDString
       AutoScalingGroupName: !Ref ASG
       DefaultResult: ABANDON
-      HeartbeatTimeout: 3600
+      HeartbeatTimeout: 300
       LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
 
   vSensorLogGroup:

@@ -888,7 +888,9 @@ Resources:
           - LaunchTemplate
           - LatestVersionNumber
         LaunchTemplateId: !Ref LaunchTemplate
-      Tags:  
+      HealthCheckType: "ELB"
+      HealthCheckGracePeriod: 60
+      Tags:
         - Key: Name
           PropagateAtLaunch: True
           Value:

@@ -1,3 +1,1 @@
-// Include details about any licenses and how to sign up. Provide links as appropriate.
-
-There is no cost to use this Quick Start, but you will be billed for any AWS services or resources that this Quick Start deploys. For more information, refer to the https://fwd.aws/rA69w?[AWS Quick Start General Information Guide^].
+This Quick Start requires a valid update key obtained from the https://customerportal.darktrace.com[Darktrace Customer Portal^] or a Darktrace representative. You must provide a valid update key during deployment in order for the Quick Start to launch successfully. A free 30-day trial is available. Contact your Darktrace representative or see https://www.darktrace.com/en/trial/[Start your free 30-day trial today].

@@ -1,6 +1,0 @@
-
-=== Parameters for deploying into a new VPC
-include::darktrace-vsensor-main.template.adoc[]
-
-=== Parameters for deploying into an existing VPC
-include::darktrace-vsensor-workload.template.adoc[]

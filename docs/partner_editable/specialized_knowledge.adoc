@@ -1,1 +1,0 @@
-This deployment guide also requires knowledge of the *{partner-product-name}* and *Enterprise Immune System* products. Contact a Darktrace representative or visit the Darktrace Customer Portal if you need more information or training.

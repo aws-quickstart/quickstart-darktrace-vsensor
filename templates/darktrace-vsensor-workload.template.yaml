@@ -325,7 +325,7 @@ Resources:
               response.send(event, context, response.SUCCESS, responseData);
             };
         Handler: index.handler
-        Runtime: nodejs12.x
+        Runtime: nodejs16.x
         Role: !GetAtt LambdaExecutionRole.Arn
         MemorySize: 128
         Timeout: 20

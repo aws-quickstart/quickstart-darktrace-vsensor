@@ -21,6 +21,7 @@ Metadata:
     - Label:
         default: Bastion configuration
       Parameters:
+        - BastionEnable
         - BastionInstanceType
         - BastionKeyPairName
         - BastionAMIOS
@@ -79,6 +80,8 @@ Metadata:
 
       # Bastion Config
 
+      BastionEnable:
+        default: Deploy with Bastion host?
       BastionInstanceType:
         default: Bastion host instance type
       BastionKeyPairName:
@@ -233,6 +236,13 @@ Parameters:
   
   # Bastion Config
 
+  BastionEnable:
+    Default: 'Yes'
+    Description: Use the AWS Quickstart Bastion template to deploy a public Bastion host to access your vSensor deployment. If 'No' is selected, configure your ssh access manually after deployment.
+    Type: String
+    AllowedValues:
+      - 'Yes'
+      - 'No'
   BastionInstanceType:
     # Limit to Nitro instances, compatible with Traffic Mirroring.
     AllowedValues:
@@ -354,6 +364,9 @@ Conditions:
   UsingDefaultBucket: !Equals
     - !Ref QSS3BucketName
     - "aws-quickstart"
+  CreateBastion: !Equals 
+    - !Ref BastionEnable
+    - "Yes"
 
 Resources:
 
@@ -373,23 +386,6 @@ Resources:
             - lambda.amazonaws.com
           Action:
           - sts:AssumeRole
-      Policies:
-        -
-          PolicyName: allowLambdaLogging
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              -
-                Effect: "Allow"
-                Action:
-                  - 'logs:CreateLogStream'
-                  - 'logs:GetLogEvents'
-                  - 'logs:PutLogEvents'
-                  - 'logs:DescribeLogGroups'
-                  - 'logs:DescribeLogStreams'
-                  - 'logs:PutRetentionPolicy'
-                  - 'logs:CreateLogGroup'
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
 
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function
@@ -419,13 +415,38 @@ Resources:
               response.send(event, context, response.SUCCESS, responseData);
             };
         Handler: index.handler
-        Runtime: nodejs12.x
+        Runtime: nodejs16.x
         Role: !GetAtt LambdaExecutionRole.Arn
         MemorySize: 128
         Timeout: 20
 
+  RandomStringLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${RandomStringLambdaFunction}"
+      RetentionInDays: !Ref VSensorLogGroupRetention
+      
+  RandomStringLambdaLogPermissions:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref LambdaExecutionRole
+      PolicyName: !Sub "${RandomStringLambdaFunction}-LogGroup"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${RandomStringLambdaFunction}"
+          - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${RandomStringLambdaFunction}:*"
+          - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${RandomStringLambdaFunction}:*:*"
+
   ShortIDRand:
     Type: AWS::CloudFormation::CustomResource
+    DependsOn: RandomStringLambdaLogPermissions
     Properties:
       Length: 12
       ShortID: !Ref ShortID
@@ -472,6 +493,7 @@ Resources:
   BastionStack:
 
     Type: AWS::CloudFormation::Stack
+    Condition: CreateBastion
     DeletionPolicy: Delete
     Properties:
       TemplateURL:
@@ -486,11 +508,15 @@ Resources:
               - !Ref "AWS::Region"
               - !Ref "QSS3BucketRegion"
       Parameters:
-        BastionHostName: !Sub 'DT-vSensorBastion-${AWS::StackName}'
+        BastionHostName:
+          !Sub
+            - "${ShortID}-vSensor-Bastion"
+            - ShortID: !GetAtt ShortIDRand.IDString
         BastionAMIOS:
           Ref: BastionAMIOS
         BastionInstanceType:
           Ref: BastionInstanceType
+        EnableTCPForwarding: true
         KeyPairName:
           Ref: BastionKeyPairName
         PublicSubnet1ID:
@@ -550,12 +576,14 @@ Resources:
             - VPCStack
             - Outputs.VPCID
         InstanceType: !Ref VSensorInstanceType
+        # If customer uses bastion, allow bastion NSG access to vSensors.
         InstanceSecurityGroups:
-          !Join
-            - ","
-            - - Fn::GetAtt:
-                - BastionStack
-                - Outputs.BastionSecurityGroupID
+          Fn::If:
+            - CreateBastion
+            - Fn::GetAtt:
+              - BastionStack
+              - Outputs.BastionSecurityGroupID
+            - ""
         LifecycleS3BucketDays: !Ref VSensorLifecycleS3BucketDays
         DesiredCapacityASG: !Ref VSensorDesiredCapacityASG
         MinSizeASG: !Ref VSensorMinSizeASG

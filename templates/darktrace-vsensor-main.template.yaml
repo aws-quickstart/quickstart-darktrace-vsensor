@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: This template creates a virtual private cloud (VPC) infrastructure for a multi-Availability Zone vSensor deployment on the Amazon Web Services (AWS) Cloud. It deploys a VPC, bastion hosts, and scalable cluster of Darktrace vSensors behind a Network Load Balancer. **WARNING** You will be billed for AWS resources you use if you create a stack from this template. (qs-1rmjte82s)
+Description: This template creates a virtual private cloud (VPC) infrastructure for a multi-Availability Zone vSensor deployment on the Amazon Web Services (AWS) Cloud. It deploys a VPC, bastion hosts, and scalable cluster of Darktrace vSensors behind a Network Load Balancer. **WARNING** You will be billed for AWS resources you use if you create a stack from this template. (qs-1ths1l3in)
 
 Metadata:
 

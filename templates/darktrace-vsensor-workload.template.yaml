@@ -669,16 +669,13 @@ Resources:
               touch /etc/darktrace/.userdata-firstboot-complete
 
               echo "Setting configuration"
-              sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a EphemeralProbe=true" /etc/sabreserver/local_lite.cfg # Configure vSensor for use in ASG.
-              sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
               set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
-              sleep 5
+              set_ossensor_loadbalancer_direct.sh 1
+              set_ephemeral.sh 1 # Configure vSensor for use in ASG.
               if [ -n "${osSensorHMAC}" ]; then
                 set_ossensor_hmac.sh ${osSensorHMAC}
-                sleep 5
               fi
               set_pcap_s3_bucket.sh ${PCAPS}
-              sleep 5
               touch /etc/darktrace/.userdata-config-complete
               echo "Completed vSensor configuration"
               service confconsole restart || true # To update AWS screenshot with current config.
@@ -797,6 +794,9 @@ Resources:
       HealthCheckProtocol: HTTPS
       Port: 4789
       Protocol: 'UDP'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.connection_termination.enabled
+          Value: true
       TargetType: 'instance'
       VpcId: !Ref DeploymentVPC
 
@@ -814,6 +814,9 @@ Resources:
       HealthCheckProtocol: HTTPS
       Port: 443
       Protocol: 'TCP'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.connection_termination.enabled
+          Value: true
       TargetType: 'instance'
       VpcId: !Ref DeploymentVPC
 
@@ -831,6 +834,9 @@ Resources:
       HealthCheckProtocol: HTTP
       Port: 80
       Protocol: 'TCP'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.connection_termination.enabled
+          Value: true
       TargetType: 'instance'
       VpcId: !Ref DeploymentVPC
 

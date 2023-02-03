@@ -510,7 +510,8 @@ Resources:
               echo "Starting userdata"
 
               echo "Getting instance ID and attempt to disable source-dest checking metadata."
-              INSTANCE_ID=$(ec2metadata --instance-id)
+              TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 120" -s`
+              INSTANCE_ID=`curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id -s`
               aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $INSTANCE_ID --region ${AWS::Region} || echo "Failed to set source-dest. Continuing anyway." # Not serious if this doesn't succeed.
 
               cat >CW_AGENT.conf <<'EOF'

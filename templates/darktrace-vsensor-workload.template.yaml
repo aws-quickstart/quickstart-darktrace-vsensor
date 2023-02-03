@@ -121,6 +121,7 @@ Parameters:
     AllowedPattern: ^[a-zA-Z0-9-]{4,64}:[a-zA-Z0-9]{5,63}$
     Type: String
     Description: Push token to authenticate with the appliance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
+    NoEcho: true
 
   # vSensor Config
 
@@ -144,6 +145,7 @@ Parameters:
     Type: String
     Description: Darktrace update key. If you don't have one, contact your Darktrace representative.
     Default: 'XXXXXX:XXXX'
+    NoEcho: true
   DesiredCapacityASG:
     Type: Number
     Description: Desired number of vSensor instances in the Auto-Scaling group.
@@ -160,6 +162,7 @@ Parameters:
     Type: String
     Description: Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor.
     Default: ""
+    NoEcho: true
 
   # Networking Config
 
@@ -300,35 +303,40 @@ Resources:
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-        Code:
-          ZipFile: >
-            const response = require("cfn-response"); const randomString = (length, chars) => {
-                var result = '';
-                for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-                return result;
-            }; exports.handler = (event, context) =>{
-              let str = "";
-              let length = 12;
-              let shortID = "";
-              if ("ResourceProperties" in event) {
-                if ("ShortID" in event['ResourceProperties'] && event['ResourceProperties']['ShortID'] != "") {
-                  str = event['ResourceProperties']['ShortID'];
-                }
-                else if ("Length" in event['ResourceProperties']) {
-                  length = Number(event['ResourceProperties']['Length']);
-                }
+      Code:
+        ZipFile: >
+          const response = require("cfn-response"); const randomString = (length, chars) => {
+              var result = '';
+              for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+              return result;
+          }; exports.handler = (event, context) =>{
+            let str = "";
+            let length = 12;
+            let shortID = "";
+            if ("ResourceProperties" in event) {
+              if ("ShortID" in event['ResourceProperties'] && event['ResourceProperties']['ShortID'] != "") {
+                str = event['ResourceProperties']['ShortID'];
               }
-              if (str == "") {
-                str = randomString(length, '0123456789abcdefghijklmnopqrstuvwxyz');
+              else if ("Length" in event['ResourceProperties']) {
+                length = Number(event['ResourceProperties']['Length']);
               }
-              const responseData = {IDString: str};
-              response.send(event, context, response.SUCCESS, responseData);
-            };
-        Handler: index.handler
-        Runtime: nodejs16.x
-        Role: !GetAtt LambdaExecutionRole.Arn
-        MemorySize: 128
-        Timeout: 20
+            }
+            if (str == "") {
+              str = randomString(length, '0123456789abcdefghijklmnopqrstuvwxyz');
+            }
+            const responseData = {IDString: str};
+            response.send(event, context, response.SUCCESS, responseData);
+          };
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 20
+      Tags:
+        - Key: darktrace-vsensor-quickstart
+          Value: !Ref ShortID
+      TracingConfig:
+        Mode: Active
 
   RandomStringLambdaLogGroup:
     Type: AWS::Logs::LogGroup
@@ -376,6 +384,8 @@ Resources:
   CreateAMIStack:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
+    # Ignore Notification ARN in customer env.
+    # kics-scan ignore-line
     Properties:
       TemplateURL: !Sub
         - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-ami.template.yaml
@@ -404,6 +414,7 @@ Resources:
           !Select
             - 0
             - !Ref Subnets
+        AMISecurityGroupId: !Ref SecurityGroupvSensor
       Tags:
         - Key: "Name"
           Value:
@@ -420,26 +431,45 @@ Resources:
           - "${ShortID}-vSensor-SG"
           - ShortID: !GetAtt ShortIDRand.IDString
       VpcId: !Ref DeploymentVPC
+      # SSH Access is configurable by customer
+      # kics-scan ignore-line
       SecurityGroupIngress:
         - IpProtocol: tcp
+          Description: Allow SSH management access from the configured SSH CIDR block
           FromPort: 22
           ToPort: 22
           CidrIp: !Ref SshCIDRBlock
         - IpProtocol: tcp
+          Description: Allow osSensors from the VPC CIDR block to send mirrored traffic & allow health check
           FromPort: 80
           ToPort: 80
           CidrIp: !Ref VpcCIDRBlock
         - IpProtocol: tcp
+          Description: Allow osSensors from the VPC CIDR block to register to the vSensor
           FromPort: 443
           ToPort: 443
           CidrIp: !Ref VpcCIDRBlock
         - IpProtocol: udp
+          Description: Allow AWS Traffic Mirroring packets to be ingested
           FromPort: 4789
           ToPort: 4789
           CidrIp: !Ref VpcCIDRBlock
+      SecurityGroupEgress:
+        - Description: Allow all outbound traffic to access the Darktrace Packages / Ubuntu CDNs on HTTP.
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - Description: Allow all outbound traffic to access the Darktrace Packages / Ubuntu CDNs on HTTPS.
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
 
   ScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
+    # Ignore Classic Load Balancer "LoadBalancerNames".
+    # kics-scan ignore-line
     Properties: 
       AutoScalingGroupName: !Ref ASG
       EstimatedInstanceWarmup: 600
@@ -480,7 +510,8 @@ Resources:
               echo "Starting userdata"
 
               echo "Getting instance ID and attempt to disable source-dest checking metadata."
-              INSTANCE_ID=$(ec2metadata --instance-id)
+              TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 120" -s`
+              INSTANCE_ID=`curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id -s`
               aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $INSTANCE_ID --region ${AWS::Region} || echo "Failed to set source-dest. Continuing anyway." # Not serious if this doesn't succeed.
 
               cat >CW_AGENT.conf <<'EOF'
@@ -638,16 +669,13 @@ Resources:
               touch /etc/darktrace/.userdata-firstboot-complete
 
               echo "Setting configuration"
-              sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a EphemeralProbe=true" /etc/sabreserver/local_lite.cfg # Configure vSensor for use in ASG.
-              sudo sed -i --follow-symlinks "/\[[Ss]erver\]/a osSensorProvideRoute=true" /etc/sabreserver/local_lite.cfg #set_pushtoken will restart sabre-server-lite
               set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
-              sleep 5
+              set_ossensor_loadbalancer_direct.sh 1
+              set_ephemeral.sh 1 # Configure vSensor for use in ASG.
               if [ -n "${osSensorHMAC}" ]; then
                 set_ossensor_hmac.sh ${osSensorHMAC}
-                sleep 5
               fi
               set_pcap_s3_bucket.sh ${PCAPS}
-              sleep 5
               touch /etc/darktrace/.userdata-config-complete
               echo "Completed vSensor configuration"
               service confconsole restart || true # To update AWS screenshot with current config.
@@ -766,6 +794,9 @@ Resources:
       HealthCheckProtocol: HTTPS
       Port: 4789
       Protocol: 'UDP'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.connection_termination.enabled
+          Value: true
       TargetType: 'instance'
       VpcId: !Ref DeploymentVPC
 
@@ -783,6 +814,9 @@ Resources:
       HealthCheckProtocol: HTTPS
       Port: 443
       Protocol: 'TCP'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.connection_termination.enabled
+          Value: true
       TargetType: 'instance'
       VpcId: !Ref DeploymentVPC
 
@@ -800,6 +834,9 @@ Resources:
       HealthCheckProtocol: HTTP
       Port: 80
       Protocol: 'TCP'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.connection_termination.enabled
+          Value: true
       TargetType: 'instance'
       VpcId: !Ref DeploymentVPC
 
@@ -807,6 +844,7 @@ Resources:
     DependsOn: PCAPCleanupBucketOnDelete # Such that on deletion, the ASG is removed before emptying S3.
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
+      # Give the Autoscaling group itself a name.
       AutoScalingGroupName: !Sub
         - "${ShortID}-vSensor-ASG"
         - ShortID: !GetAtt ShortIDRand.IDString
@@ -827,6 +865,14 @@ Resources:
         LaunchTemplateId: !Ref LaunchTemplate
       HealthCheckType: "ELB"
       HealthCheckGracePeriod: 60
+      # Give each vSensor a name too.
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: True
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-ASG"
+              - ShortID: !GetAtt ShortIDRand.IDString
       LifecycleHookSpecificationList:
         - LifecycleHookName: !Sub
             - "${ShortID}-vSensor-LifecycleHook"
@@ -839,6 +885,8 @@ Resources:
 
   PCAPS:
     Type: 'AWS::S3::Bucket'
+    # Ignore Bucket versioning for PCAPS.
+    # kics-scan ignore-line
     Properties:
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
@@ -858,6 +906,25 @@ Resources:
         !Sub
           - "${ShortID}-vsensor-pcaps"
           - ShortID: !GetAtt ShortIDRand.IDString
+      LoggingConfiguration:
+        LogFilePrefix: "s3logging"
+
+
+  PCAPSSSLOnlyPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref PCAPS
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 's3:*'
+            Effect: Deny
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${PCAPS}'
+            Principal: '*'
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
 
   # From https://gist.github.com/drumadrian/e1601ab34e7f609b5075f65599108960
   # Empty the PCAP bucket on Stack deletion to prevent failure.
@@ -1004,6 +1071,11 @@ Resources:
       Role: !GetAtt CleanupBucketOnDeleteLambdaRole.Arn
       Runtime: python3.8
       Timeout: 60
+      Tags:
+        - Key: darktrace-vsensor-quickstart
+          Value: !Ref ShortID
+      TracingConfig:
+        Mode: Active
 
   CleanupBucketOnDeleteLambdaLogGroup:
     Type: AWS::Logs::LogGroup

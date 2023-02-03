@@ -49,6 +49,7 @@ Parameters:
     Type: String
     Description: Which Update Key should be used for the vSensor? (Contact your Darktrace Representative)
     Default: 'XXXXXX:XXXX'
+    NoEcho: true
   LogGroupName:
     Type: String
     Description: The CloudWatch log group that the AMI creation process should log to.

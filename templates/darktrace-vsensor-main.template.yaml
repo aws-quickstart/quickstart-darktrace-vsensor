@@ -156,6 +156,7 @@ Parameters:
     AllowedPattern: ^[a-zA-Z0-9-]{4,64}:[a-zA-Z0-9]{5,63}$
     Type: String
     Description: Push token to authenticate with the appliance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
+    NoEcho: true
 
   # VSensor Config
 
@@ -176,6 +177,7 @@ Parameters:
     Type: String
     Description: Darktrace update key. If you don't have one, contact your Darktrace representative.
     Default: 'XXXXXX:XXXX'
+    NoEcho: true
   VSensorDesiredCapacityASG:
     Type: Number
     Description: Desired number of vSensor instances in the Auto-Scaling group.
@@ -192,6 +194,7 @@ Parameters:
     Type: String
     Description: Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor.
     Default: ""
+    NoEcho: true
 
   # Network Config
 

@@ -906,6 +906,25 @@ Resources:
         !Sub
           - "${ShortID}-vsensor-pcaps"
           - ShortID: !GetAtt ShortIDRand.IDString
+      LoggingConfiguration:
+        LogFilePrefix: "s3logging"
+
+
+  PCAPSSSLOnlyPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref PCAPS
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 's3:*'
+            Effect: Deny
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${PCAPS}'
+            Principal: '*'
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
 
   # From https://gist.github.com/drumadrian/e1601ab34e7f609b5075f65599108960
   # Empty the PCAP bucket on Stack deletion to prevent failure.

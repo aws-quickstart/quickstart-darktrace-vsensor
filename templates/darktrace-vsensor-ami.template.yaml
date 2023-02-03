@@ -562,6 +562,11 @@ Resources:
       Role : !GetAtt CleanupAMIOnDeleteLambdaRole.Arn
       Runtime: python3.8
       Timeout: 60
+      Tags:
+        - Key: darktrace-vsensor-quickstart
+          Value: !Ref ShortID
+      TracingConfig:
+        Mode: Active
 
   CleanupAMIOnDeleteLambdaLogGroup:
     Type: AWS::Logs::LogGroup

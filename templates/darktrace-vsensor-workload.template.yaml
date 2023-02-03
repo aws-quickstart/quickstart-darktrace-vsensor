@@ -404,6 +404,7 @@ Resources:
           !Select
             - 0
             - !Ref Subnets
+        AMISecurityGroupId: !Ref SecurityGroupvSensor
       Tags:
         - Key: "Name"
           Value:
@@ -422,21 +423,36 @@ Resources:
       VpcId: !Ref DeploymentVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
+          Description: Allow SSH management access from the configured SSH CIDR block
           FromPort: 22
           ToPort: 22
           CidrIp: !Ref SshCIDRBlock
         - IpProtocol: tcp
+          Description: Allow osSensors from the VPC CIDR block to send mirrored traffic & allow health check
           FromPort: 80
           ToPort: 80
           CidrIp: !Ref VpcCIDRBlock
         - IpProtocol: tcp
+          Description: Allow osSensors from the VPC CIDR block to register to the vSensor
           FromPort: 443
           ToPort: 443
           CidrIp: !Ref VpcCIDRBlock
         - IpProtocol: udp
+          Description: Allow AWS Traffic Mirroring packets to be ingested
           FromPort: 4789
           ToPort: 4789
           CidrIp: !Ref VpcCIDRBlock
+      SecurityGroupEgress:
+        - Description: Allow all outbound traffic to access the Darktrace Packages / Ubuntu CDNs on HTTP.
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - Description: Allow all outbound traffic to access the Darktrace Packages / Ubuntu CDNs on HTTPS.
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
 
   ScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy

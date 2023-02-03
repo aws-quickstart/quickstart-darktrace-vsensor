@@ -19,6 +19,7 @@ Metadata:
           - LogGroupName
           - KeyPairName
           - VPCSubnetId
+          - AMISecurityGroupId
     ParameterLabels:
       TargetAmiSSMName:
         default: Name for newly created AMI
@@ -34,6 +35,8 @@ Metadata:
         default: EC2 Key-pair Name
       VPCSubnetId:
         default: VPC Subnet ID for vSensor AMI generation
+      AMISecurityGroupId:
+        default: The security group to apply to the AMI EC2 Instance
 
 Parameters:
   TargetAmiSSMName:
@@ -78,6 +81,8 @@ Parameters:
   VPCSubnetId:
     Type: 'AWS::EC2::Subnet::Id'
     Description: Which VPC should the AMI EC2 Instance be created in?
+  AMISecurityGroupId:
+    Type: 'AWS::EC2::SecurityGroup::Id'
   FocalAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/canonical/ubuntu/server-minimal/focal/stable/current/amd64/hvm/ebs-gp2/ami-id'
@@ -274,6 +279,8 @@ Resources:
               - "apt install -y awscli"
               - !Sub "aws ssm start-automation-execution --document-name ${SsmAMIBuild} --region ${AWS::Region}"
       SubnetId: !Ref VPCSubnetId
+      SecurityGroupIds:
+        - !Ref AMISecurityGroupId
 
   SsmAMIBuild:
     Metadata:

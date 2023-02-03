@@ -844,6 +844,7 @@ Resources:
     DependsOn: PCAPCleanupBucketOnDelete # Such that on deletion, the ASG is removed before emptying S3.
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
+      # Give the Autoscaling group itself a name.
       AutoScalingGroupName: !Sub
         - "${ShortID}-vSensor-ASG"
         - ShortID: !GetAtt ShortIDRand.IDString
@@ -864,6 +865,14 @@ Resources:
         LaunchTemplateId: !Ref LaunchTemplate
       HealthCheckType: "ELB"
       HealthCheckGracePeriod: 60
+      # Give each vSensor a name too.
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: True
+          Value:
+            !Sub
+              - "${ShortID}-vSensor-ASG"
+              - ShortID: !GetAtt ShortIDRand.IDString
       LifecycleHookSpecificationList:
         - LifecycleHookName: !Sub
             - "${ShortID}-vSensor-LifecycleHook"

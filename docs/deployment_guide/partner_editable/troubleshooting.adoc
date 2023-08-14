@@ -2,5 +2,19 @@
 
 For troubleshooting common Quick Start issues, refer to the https://fwd.aws/rA69w?[AWS Quick Start General Information Guide^] and https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html[Troubleshooting CloudFormation^].
 
+=== Auto Scaling Group (ASG) Fails
+
+In scenarios of invalid configuration parameters, upstream internet access blocked and other cases of the EC2 images failing to install and configure Darktrace vSensor, the ASG will fail to deploy.
+
+Viewing the Auto Scaling Group "Instance Management" page via the CloudFormation resources page will show terminating or no instances in this situation.
+
+In most situations, logging will be available from the vSensor start up in CloudWatch. View "Log Groups", find the group named `[SHORTID]-vSensor-Logs` and look for Log Streams ending in `-userdata`.
+
+If the configuration provided by SSM Parameters is seen as invalid in these logs, edit the SSM parameters to rectify the problem. Then perform a "instance refresh" on the ASG to attempt again with the new configuration options.
+
+If no `userdata` logging is provided, you may need to connect directly to the vSensor via SSH or AWS Systems Manager and retrieve `/var/log/userdata.log` directly. "Detach" the vSensor from the ASG to prevent it terminating during this procedure.
+
+For situations where the error is not clear, contact Darktrace Customer Support via the https://customerportal.darktrace.com[Darktrace Customer Portal^], provide CloudFormation stack errors and one of the above `userdata` logs if available.
+
 // == Resources
 // Uncomment section and add links to any external resources that are specified by the partner.

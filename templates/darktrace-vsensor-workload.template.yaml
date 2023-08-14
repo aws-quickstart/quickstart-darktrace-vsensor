@@ -11,8 +11,8 @@ Metadata:
           default: Darktrace appliance configuration
         Parameters:
           - ApplianceHostname
-          - AppliancePort
           - AppliancePushtoken
+          - ApplianceProxy
       - Label:
           default: Darktrace vSensor configuration
         Parameters:
@@ -45,20 +45,17 @@ Metadata:
       - Label:
           default: Quick Start configuration
         Parameters:
-          - QSS3BucketName
-          - QSS3BucketRegion
-          - QSS3KeyPrefix
           - ShortID
 
 
     ParameterLabels:
       # Appliance Config
       ApplianceHostname:
-        default: Appliance host name  
-      AppliancePort:
-        default: Appliance port
+        default: Appliance host name
       AppliancePushtoken:
         default: Appliance push token
+      ApplianceProxy:
+        default: Appliance proxy
       # vSensor Config
       InstanceType:
         default: EC2 instance type
@@ -98,12 +95,6 @@ Metadata:
       LifecycleS3BucketDays:
         default: Captured packets storage retention (days)
       # Quickstart Config
-      QSS3BucketName:
-        default: Quick Start S3 bucket name
-      QSS3BucketRegion:
-        default: Quick Start S3 bucket Region
-      QSS3KeyPrefix:
-        default: Quick Start S3 key prefix
       ShortID:
         default: Quick Start unique run ID (12 characters or less)
 
@@ -111,17 +102,14 @@ Parameters:
   # Appliance Config
 
   ApplianceHostname:
-    Type: String
-    Description: Host name of the Darktrace appliance.
-  AppliancePort:
-    Type: Number
-    Description: Connection port between vSensor and the Darktrace appliance.
-    Default: 443
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Host name of the Darktrace master instance (e.g. https://mastername.cloud.darktrace.com:443). HTTPS Protocol prefix and port suffix are optional. Defaults to port 443."
   AppliancePushtoken:
-    AllowedPattern: ^[a-zA-Z0-9-]{4,64}:[a-zA-Z0-9]{5,63}$
-    Type: String
-    Description: Push token to authenticate with the appliance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
-    NoEcho: true
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Push token to authenticate with the master instance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]."
+  ApplianceProxy:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Proxy to access the master instance, include HTTP protocol and optional auth (e.g. http://user:pass@hostname:port). For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]. Set SSM parameter to 'none' to disable."
 
   # vSensor Config
 
@@ -141,17 +129,14 @@ Parameters:
     Type: 'CommaDelimitedList'
     Description: Darktrace vSensor security group IDs. A basic vSensor connectivity Security Group (port 80, 443, 4789 for the VPC) will be additionally added by this cloudformation.
   VsensorUpdatekey:
-    AllowedPattern: ^[a-zA-Z0-9%\.]+:[a-zA-Z0-9]+$
-    Type: String
-    Description: Darktrace update key. If you don't have one, contact your Darktrace representative.
-    Default: 'XXXXXX:XXXX'
-    NoEcho: true
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Darktrace update key. If you don't have one, contact your Darktrace representative."
   DesiredCapacityASG:
     Type: Number
     Description: Desired number of vSensor instances in the Auto-Scaling group.
     Default: 1
   MinSizeASG:
-    Type: String
+    Type: Number
     Description: Minimum number of vSensor instances in the Auto-Scaling group.
     Default: 1
   MaxSizeASG:
@@ -159,10 +144,8 @@ Parameters:
     Description: Maximum number of vSensor instances in the Auto-Scaling group.
     Default: 5
   osSensorHMAC:
-    Type: String
-    Description: Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor.
-    Default: ""
-    NoEcho: true
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor. The SSM Parameter may be set to 'none' to disable."
 
   # Networking Config
 
@@ -197,7 +180,7 @@ Parameters:
     Type: String
     Default: '0.0.0.0/0'
     Description: Destination CIDR for the Traffic Mirror filter. Enter `0.0.0.0/0` for all traffic.
-  
+
   # Logs & PCAPs Config
 
   LogGroupRetention:
@@ -227,60 +210,21 @@ Parameters:
     Description: Number of days to retain captured packets in Amazon S3.
     Default: 7
   # Quickstart Config
-  QSS3BucketName:
-    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
-    ConstraintDescription:
-      The Quick Start bucket name can include numbers, lowercase
-      letters, uppercase letters, and hyphens (-). It cannot start or end with a 
-      hyphen (-).
-    Default: aws-quickstart
-    Description:
-      Name of the S3 bucket for your copy of the Quick Start assets. 
-      Keep the default name unless you are customizing the template. 
-      Changing the name updates code references to point to a new Quick 
-      Start location. This name can include numbers, lowercase letters, 
-      uppercase letters, and hyphens, but do not start or end with a hyphen (-). 
-      See https://aws-quickstart.github.io/option1.html.
-    Type: String
-  QSS3BucketRegion:
-    Default: 'us-east-1'
-    Description: 'AWS Region where the Quick Start S3 bucket (QSS3BucketName) is 
-    hosted. Keep the default Region unless you are customizing the template. 
-    Changing this Region updates code references to point to a new Quick Start location. 
-    When using your own bucket, specify the Region. 
-    See https://aws-quickstart.github.io/option1.html.'
-    Type: String
-  QSS3KeyPrefix:
-    AllowedPattern: '^[0-9a-zA-Z-/]*$'
-    ConstraintDescription:
-      The Quick Start S3 key prefix can include numbers, lowercase letters,
-      uppercase letters, hyphens (-), and forward slashes (/). The prefix should
-      end with a forward slash (/).
-    Default: quickstart-darktrace-vsensor/
-    Description:
-      S3 key prefix that is used to simulate a directory for your copy of the 
-      Quick Start assets. Keep the default prefix unless you are customizing 
-      the template. Changing this prefix updates code references to point to 
-      a new Quick Start location. This prefix can include numbers, lowercase 
-      letters, uppercase letters, hyphens (-), and forward slashes (/). End with 
-      a forward slash. See https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html 
-      and https://aws-quickstart.github.io/option1.html.
-    Type: String
   ShortID:
     AllowedPattern: ^[0-9a-z-]{0,12}$
     ConstraintDescription: Unique ID prefix can include up to 12 characters, including numbers, lowercase letters, hyphens (-).
     Description: Quick Start short unique ID used to identify resources from other installations of this Quick Start. If left empty, a random string is generated.
     Default: ""
     Type: String
+  FocalAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/canonical/ubuntu/server/focal/stable/current/amd64/hvm/ebs-gp2/ami-id'
 
 Conditions:
-  UsingDefaultBucket: !Equals
-    - !Ref QSS3BucketName
-    - "aws-quickstart"
   NotUsingExtraInstanceSecurityGroups: !Equals
     - !Join [",", !Ref "InstanceSecurityGroups"]
     - ""
-    
+
 Resources:
 
   ## Generate a short ID if the user does not define one.
@@ -328,7 +272,7 @@ Resources:
             response.send(event, context, response.SUCCESS, responseData);
           };
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       Role: !GetAtt LambdaExecutionRole.Arn
       MemorySize: 128
       Timeout: 20
@@ -343,7 +287,7 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${RandomStringLambdaFunction}"
       RetentionInDays: !Ref LogGroupRetention
-      
+
   RandomStringLambdaLogPermissions:
     Type: AWS::IAM::Policy
     Properties:
@@ -367,60 +311,8 @@ Resources:
     DependsOn: RandomStringLambdaLogPermissions
     Properties:
       Length: 12
-      ShortID: !Ref ShortID 
+      ShortID: !Ref ShortID
       ServiceToken: !GetAtt RandomStringLambdaFunction.Arn
-
-  vSensorAmiName:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name:
-        !Sub
-          - "${ShortID}-vSensor-AMI"
-          - ShortID: !GetAtt ShortIDRand.IDString
-      Description: The AMI ID of the autogenerated Darktrace vSensor software AMI image.
-      Type: String
-      Value: "NOT_YET_SET"
-
-  CreateAMIStack:
-    Type: AWS::CloudFormation::Stack
-    DeletionPolicy: Delete
-    # Ignore Notification ARN in customer env.
-    # kics-scan ignore-line
-    Properties:
-      TemplateURL: !Sub
-        - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/darktrace-vsensor-ami.template.yaml
-        - S3Bucket: !If
-            - UsingDefaultBucket
-            - !Sub "aws-quickstart-${AWS::Region}"
-            - !Ref "QSS3BucketName"
-          S3Region: !If
-            - UsingDefaultBucket
-            - !Ref "AWS::Region"
-            - !Ref "QSS3BucketRegion"
-      Parameters:
-        TargetAmiSSMName:
-          !Sub
-            - "${ShortID}-vSensor-AMI"
-            - ShortID: !GetAtt ShortIDRand.IDString
-        ShortID: !GetAtt ShortIDRand.IDString
-        VsensorUpdatekey: !Ref VsensorUpdatekey
-        LogGroupName: 
-          !Sub
-            - "${ShortID}-vSensor-Logs"
-            - ShortID: !GetAtt ShortIDRand.IDString
-        LogGroupRetention: !Ref LogGroupRetention
-        KeyPairName: !Ref KeyPairName
-        VPCSubnetId:
-          !Select
-            - 0
-            - !Ref Subnets
-        AMISecurityGroupId: !Ref SecurityGroupvSensor
-      Tags:
-        - Key: "Name"
-          Value:
-            !Sub
-              - "${ShortID}-vSensor-CreateAMI-Stack"
-              - ShortID: !GetAtt ShortIDRand.IDString
 
   SecurityGroupvSensor:
     Type: AWS::EC2::SecurityGroup
@@ -470,7 +362,7 @@ Resources:
     Type: AWS::AutoScaling::ScalingPolicy
     # Ignore Classic Load Balancer "LoadBalancerNames".
     # kics-scan ignore-line
-    Properties: 
+    Properties:
       AutoScalingGroupName: !Ref ASG
       EstimatedInstanceWarmup: 600
       PolicyType: TargetTrackingScaling
@@ -482,38 +374,38 @@ Resources:
 
   LaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
-    DependsOn: "CreateAMIStack"
     Properties:
       LaunchTemplateData:
         UserData: !Base64
-          'Fn::Sub': 
+          'Fn::Sub':
             - |
               #!/bin/bash -xe
-
               function exittrap() {
                   exitcode="$?"
                   set +e
                   if [ "$exitcode" -gt 0 ]; then
                       echo "Failed to successfully configure vSensor, more details in /var/log/user-data.log"
-                      aws autoscaling complete-lifecycle-action --lifecycle-action-result ABANDON --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region} 
+                      aws autoscaling complete-lifecycle-action --lifecycle-action-result ABANDON --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region}
                   fi
-                  systemctl enable unattended-upgrades
                   exit "$exitcode"
               }
-
-              touch /etc/darktrace/.userdata-started
+              mkdir -p /etc/darktrace/
               exec > >(tee -a /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
               trap "exittrap" EXIT
 
               # See https://youtu.be/unMiTRw8JVE for an example on how to review this console output if Cloudwatch logging fails.
               echo "Starting userdata"
+              apt update && apt install -y awscli
 
               echo "Getting instance ID and attempt to disable source-dest checking metadata."
               TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 120" -s`
               INSTANCE_ID=`curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id -s`
               aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $INSTANCE_ID --region ${AWS::Region} || echo "Failed to set source-dest. Continuing anyway." # Not serious if this doesn't succeed.
 
+              wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+              dpkg -i -E ./amazon-cloudwatch-agent.deb
+              systemctl enable amazon-cloudwatch-agent
               cat >CW_AGENT.conf <<'EOF'
               {
                 "agent": {
@@ -657,36 +549,27 @@ Resources:
                 }
               }
               EOF
-              cp ./CW_AGENT.conf /etc/darktrace/
-              sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:./CW_AGENT.conf -s
-              sudo systemctl start amazon-cloudwatch-agent
-              touch /etc/darktrace/.userdata-cw-complete
+              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:./CW_AGENT.conf -s
+              systemctl start amazon-cloudwatch-agent
               echo "Cloudwatch configuration complete."
 
-              echo "Running firstboot scripts"
-              /usr/lib/inithooks/firstboot.d/15random-uuid
-              /usr/lib/inithooks/firstboot.d/15regen-sslkeys
-              touch /etc/darktrace/.userdata-firstboot-complete
+              bash <(wget -O - https://packages-cdn.darktrace.com/install) --updateKey ${VsensorUpdatekey} --updateKeyType AWS:SSM
 
               echo "Setting configuration"
-              set_pushtoken.sh ${AppliancePushtoken} ${ApplianceHostname}:${AppliancePort}
+              set_pushtoken.sh -t "AWS:SSM" "${AppliancePushtoken}" "${ApplianceHostname}" "${ApplianceProxy}"
               set_ossensor_loadbalancer_direct.sh 1
               set_ephemeral.sh 1 # Configure vSensor for use in ASG.
               if [ -n "${osSensorHMAC}" ]; then
-                set_ossensor_hmac.sh ${osSensorHMAC}
+                set_ossensor_hmac.sh -t "AWS:SSM" "${osSensorHMAC}"
               fi
               set_pcap_s3_bucket.sh ${PCAPS}
-              touch /etc/darktrace/.userdata-config-complete
               echo "Completed vSensor configuration"
               service confconsole restart || true # To update AWS screenshot with current config.
               #set updatekey, upgrade and enable daily updates
-              set_updatekey.sh ${VsensorUpdatekey}
-              touch /etc/darktrace/.userdata-confconsole-restart
+              set_updatekey.sh -t "AWS:SSM" "${VsensorUpdatekey}"
               echo "Successful configuration of vSensor. Telling AWS vSensor is ready for ASG, without waiting for upgrades."
               aws autoscaling complete-lifecycle-action --lifecycle-action-result CONTINUE --instance-id $INSTANCE_ID --lifecycle-hook-name "${lifecycleHookName}" --auto-scaling-group-name "${autoScalingGroupName}"  --region ${AWS::Region}
-              touch /etc/darktrace/.userdata-sent-success
-              apt-get update && /usr/sbin/cron-apt-dist-upgrade.sh || true
-              touch /etc/darktrace/.userdata-completed
+              /usr/sbin/cron-apt-dist-upgrade.sh || true
               echo "Userdata script complete."
             - autoScalingGroupName: !Sub
                 - "${ShortID}-vSensor-ASG"
@@ -708,12 +591,12 @@ Resources:
               - - !Sub "${SecurityGroupvSensor}"
               - !Split
                 - ","
-                - !Sub 
+                - !Sub
                   - "${SecurityGroupvSensor},${customerSecurityGroups}"
                   - customerSecurityGroups: !Join [",", !Ref "InstanceSecurityGroups"]
         IamInstanceProfile:
           Arn: !GetAtt vSensorIamInstanceProfile.Arn
-        ImageId: !GetAtt vSensorAmiName.Value
+        ImageId: !Ref FocalAmiId
         TagSpecifications:
           - ResourceType: 'instance'
             Tags:
@@ -760,7 +643,7 @@ Resources:
 
   TrafficMirrorFilterRuleIngress:
     Type: AWS::EC2::TrafficMirrorFilterRule
-    Properties: 
+    Properties:
       Description: 'allow all ingress'
       DestinationCidrBlock: !Ref TrafficMirrorDestCIDR
       RuleAction: 'accept'
@@ -771,7 +654,7 @@ Resources:
 
   TrafficMirrorFilterRuleEgress:
     Type: AWS::EC2::TrafficMirrorFilterRule
-    Properties: 
+    Properties:
       Description: 'allow all egress'
       DestinationCidrBlock: !Ref TrafficMirrorDestCIDR
       RuleAction: 'accept'
@@ -782,14 +665,14 @@ Resources:
 
   TargetGroupUDP4789:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    Properties: 
-      Name: 
+    Properties:
+      Name:
         !Sub
           - "${ShortID}-vSensor-ASG-UDP4789"
           - ShortID: !GetAtt ShortIDRand.IDString
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
-      HealthCheckPath: /
+      HealthCheckPath: /healthcheck
       HealthCheckPort: '443'
       HealthCheckProtocol: HTTPS
       Port: 4789
@@ -802,14 +685,14 @@ Resources:
 
   TargetGroupTCP443:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    Properties: 
+    Properties:
       Name:
         !Sub
           - "${ShortID}-vSensor-ASG-TCP443"
           - ShortID: !GetAtt ShortIDRand.IDString
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
-      HealthCheckPath: /
+      HealthCheckPath: /healthcheck
       HealthCheckPort: '443'
       HealthCheckProtocol: HTTPS
       Port: 443
@@ -822,14 +705,14 @@ Resources:
 
   TargetGroupTCP80:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    Properties: 
+    Properties:
       Name:
         !Sub
           - "${ShortID}-vSensor-ASG-TCP80"
           - ShortID: !GetAtt ShortIDRand.IDString
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
-      HealthCheckPath: /
+      HealthCheckPath: /healthcheck
       HealthCheckPort: '80'
       HealthCheckProtocol: HTTP
       Port: 80
@@ -850,16 +733,16 @@ Resources:
         - ShortID: !GetAtt ShortIDRand.IDString
       MinSize: !Ref MinSizeASG
       MaxSize: !Ref MaxSizeASG
-      MetricsCollection: 
+      MetricsCollection:
         - Granularity: 1Minute
       DesiredCapacity: !Ref DesiredCapacityASG
       VPCZoneIdentifier: !Ref Subnets
-      TargetGroupARNs: 
+      TargetGroupARNs:
         - !Ref TargetGroupUDP4789
         - !Ref TargetGroupTCP443
         - !Ref TargetGroupTCP80
       LaunchTemplate:
-        Version: !GetAtt 
+        Version: !GetAtt
           - LaunchTemplate
           - LatestVersionNumber
         LaunchTemplateId: !Ref LaunchTemplate
@@ -878,7 +761,7 @@ Resources:
             - "${ShortID}-vSensor-LifecycleHook"
             - ShortID: !GetAtt ShortIDRand.IDString
           DefaultResult: ABANDON
-          HeartbeatTimeout: 300
+          HeartbeatTimeout: 900
           LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
 
 # PCAPS S3 Bucket
@@ -912,7 +795,7 @@ Resources:
 
   PCAPSSSLOnlyPolicy:
     Type: AWS::S3::BucketPolicy
-    Properties: 
+    Properties:
       Bucket: !Ref PCAPS
       PolicyDocument:
         Version: 2012-10-17
@@ -921,6 +804,7 @@ Resources:
             Effect: Deny
             Resource:
               - !Sub 'arn:${AWS::Partition}:s3:::${PCAPS}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${PCAPS}/*'
             Principal: '*'
             Condition:
               Bool:
@@ -1045,7 +929,7 @@ Resources:
                               'RequestId': event['RequestId'],
                               'LogicalResourceId': event['LogicalResourceId'],
                               'Data': json.loads("{}")}
-              
+
               json_response_body = json.dumps(response_body)
               headers = {
                   'content-type' : '',
@@ -1060,7 +944,7 @@ Resources:
 
               except Exception as e:
                   print("send(..) failed executing http.request(..):", e)
-              
+
               #requests.put(event['ResponseURL'], data=json.dumps(response_body))
 
       Description: cleanup Bucket on Delete Lambda Lambda function.
@@ -1082,7 +966,7 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${CleanupBucketOnDeleteLambda}"
       RetentionInDays: !Ref LogGroupRetention
-      
+
   CleanupBucketOnDeleteLambdaLogPermissions:
     Type: AWS::IAM::Policy
     Properties:
@@ -1104,8 +988,8 @@ Resources:
   PCAPCleanupBucketOnDelete:
     Type: AWS::CloudFormation::CustomResource
     Properties:
-      ServiceToken: 
-       Fn::GetAtt: 
+      ServiceToken:
+       Fn::GetAtt:
           - "CleanupBucketOnDeleteLambda"
           - "Arn"
       BucketName: !Ref PCAPS
@@ -1128,8 +1012,8 @@ Resources:
 
   LoadBalancerListenerUDP4789:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties: 
-      DefaultActions: 
+    Properties:
+      DefaultActions:
        - Type: "forward"
          TargetGroupArn: !Ref TargetGroupUDP4789
       LoadBalancerArn: !Ref LoadBalancer
@@ -1138,8 +1022,8 @@ Resources:
 
   LoadBalancerListenerTCP443:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties: 
-      DefaultActions: 
+    Properties:
+      DefaultActions:
        - Type: "forward"
          TargetGroupArn: !Ref TargetGroupTCP443
       LoadBalancerArn: !Ref LoadBalancer
@@ -1148,8 +1032,8 @@ Resources:
 
   LoadBalancerListenerTCP80:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties: 
-      DefaultActions: 
+    Properties:
+      DefaultActions:
        - Type: "forward"
          TargetGroupArn: !Ref TargetGroupTCP80
       LoadBalancerArn: !Ref LoadBalancer
@@ -1228,6 +1112,36 @@ Resources:
             - Effect: "Allow"
               Action: "ec2:ModifyInstanceAttribute"
               Resource: !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
+        - PolicyName: "AllowSSMParameterReads"
+          PolicyDocument:
+            Statement:
+            - Effect: "Allow"
+              Action: "ssm:GetParameter*"
+              Resource:
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${VsensorUpdatekey}"
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplianceHostname}"
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppliancePushtoken}"
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplianceProxy}"
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${osSensorHMAC}"
+        - PolicyName: "AllowSSMSessions"
+          PolicyDocument:
+            Statement:
+            - Effect: "Allow"
+              Action:
+                - "ssmmessages:CreateControlChannel"
+                - "ssmmessages:CreateDataChannel"
+                - "ssmmessages:OpenControlChannel"
+                - "ssmmessages:OpenDataChannel"
+              Resource: "*"
+            - Effect: "Allow"
+              Action:
+                - "s3:GetEncryptionConfiguration"
+              Resource: "*"
+            - Effect: "Allow"
+              Action:
+                - "ssm:UpdateInstanceInformation"
+              Resource: "*"
+
 
 Outputs:
   BucketName:
@@ -1249,7 +1163,7 @@ Outputs:
   TrafficMirrorTargetId:
     Description: ID of the Traffic Mirror target generated for Traffic Mirror sessions.
     Value: !Ref TrafficMirrorTarget
-  
+
   Postdeployment:
     Description: See the deployment guide for post-deployment steps.
     Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.sortDate&quickstart-all.sort-order=desc&awsm.page-quickstart-all=5

@@ -29,8 +29,8 @@ Metadata:
         default: Darktrace appliance configuration
       Parameters:
         - VSensorApplianceHostname
-        - VSensorAppliancePort
         - VSensorAppliancePushtoken
+        - VSensorApplianceProxy
     - Label:
         default: Darktrace vSensor configuration
       Parameters:
@@ -92,11 +92,11 @@ Metadata:
       # Appliance Config
 
       VSensorApplianceHostname:
-        default: Appliance host name  
-      VSensorAppliancePort:
-        default: Appliance port
+        default: Appliance host name
       VSensorAppliancePushtoken:
-        default: Appliance push token  
+        default: Appliance push token 
+      VSensorApplianceProxy:
+        default: Appliance proxy
 
       # vSensor Config
 
@@ -146,17 +146,14 @@ Parameters:
   # Appliance Config
 
   VSensorApplianceHostname:
-    Type: String
-    Description: Host name of the Darktrace appliance.
-  VSensorAppliancePort:
-    Type: Number
-    Description: Connection port between vSensor and the Darktrace appliance.
-    Default: 443
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Host name of the Darktrace master instance (e.g. https://mastername.cloud.darktrace.com:443). HTTPS Protocol prefix and port suffix are optional. Defaults to port 443."
   VSensorAppliancePushtoken:
-    AllowedPattern: ^[a-zA-Z0-9-]{4,64}:[a-zA-Z0-9]{5,63}$
-    Type: String
-    Description: Push token to authenticate with the appliance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal].
-    NoEcho: true
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Push token to authenticate with the master instance. Include both parts including colon separator. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]."
+  VSensorApplianceProxy:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Proxy to access the master instance, include HTTP protocol and optional auth (e.g. http://user:pass@hostname:port). For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]. Set SSM parameter to 'none' to disable."
 
   # VSensor Config
 
@@ -170,14 +167,11 @@ Parameters:
       - m5.2xlarge
       - m5.4xlarge
   VSensorKeyPairName:
-    Type: 'AWS::EC2::KeyPair::KeyName'
+    Type: AWS::EC2::KeyPair::KeyName
     Description: EC2 key pair to use to connect to vSensor.
   VSensorUpdatekey:
-    AllowedPattern: ^[a-zA-Z0-9%\.]+:[a-zA-Z0-9]+$
-    Type: String
-    Description: Darktrace update key. If you don't have one, contact your Darktrace representative.
-    Default: 'XXXXXX:XXXX'
-    NoEcho: true
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Darktrace update key. If you don't have one, contact your Darktrace representative."
   VSensorDesiredCapacityASG:
     Type: Number
     Description: Desired number of vSensor instances in the Auto-Scaling group.
@@ -191,10 +185,8 @@ Parameters:
     Description: Maximum number of vSensor instances in the Auto-Scaling group.
     Default: 5
   VSensorOsSensorHMAC:
-    Type: String
-    Description: Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor.
-    Default: ""
-    NoEcho: true
+    Type: AWS::SSM::Parameter::Name
+    Description: "Systems Manager Parameter name: Hash-based message authentication code (HMAC) token to authenticate osSensors with vSensor. The SSM Parameter may be set to 'none' to disable."
 
   # Network Config
 
@@ -240,8 +232,8 @@ Parameters:
   # Bastion Config
 
   BastionEnable:
-    Default: 'Yes'
-    Description: Use the AWS Quickstart Bastion template to deploy a public Bastion host to access your vSensor deployment. If 'No' is selected, configure your ssh access manually after deployment.
+    Default: 'No'
+    Description: Use the AWS Quickstart Bastion template to deploy a public Bastion host to access your vSensor deployment. If 'No' is selected, you may still access via an AWS Systems Manager Session, or configure your ssh access manually after deployment.
     Type: String
     AllowedValues:
       - 'Yes'
@@ -264,9 +256,12 @@ Parameters:
   BastionAMIOS:
     AllowedValues:
       - Amazon-Linux2-HVM
-      - CentOS-7-HVM
+      - Amazon-Linux2-HVM-ARM
+      - Amazon-Linux2022
+      - Amazon-Linux2022-ARM
       - Ubuntu-Server-20.04-LTS-HVM
-      - SUSE-SLES-15-HVM
+      - Ubuntu-Server-22.04-LTS-HVM
+      - Ubuntu-Server-22.04-LTS-HVM-ARM
     Default: Amazon-Linux2-HVM
     Description: Linux distribution for the Amazon Machine Image (AMI) used for the bastion host instances.
     Type: String
@@ -335,10 +330,10 @@ Parameters:
   QSS3BucketRegion:
     Default: 'us-east-1'
     Description: 'AWS Region where the Quick Start S3 bucket (QSS3BucketName) is 
-    hosted. Keep the default Region unless you are customizing the template. 
-    Changing this Region updates code references to point to a new Quick Start location. 
-    When using your own bucket, specify the Region. 
-    See https://aws-quickstart.github.io/option1.html.'
+      hosted. Keep the default Region unless you are customizing the template.
+      Changing this Region updates code references to point to a new Quick Start location.
+      When using your own bucket, specify the Region.
+      See https://aws-quickstart.github.io/option1.html.'
     Type: String
   QSS3KeyPrefix:
     AllowedPattern: '^[0-9a-zA-Z-/]*$'
@@ -418,7 +413,7 @@ Resources:
             response.send(event, context, response.SUCCESS, responseData);
           };
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       Role: !GetAtt LambdaExecutionRole.Arn
       MemorySize: 128
       Timeout: 20
@@ -510,7 +505,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template'
+          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion-entrypoint-existing-vpc.template.yaml'
           - S3Bucket: !If
               - UsingDefaultBucket
               - !Sub "aws-quickstart-${AWS::Region}"
@@ -572,8 +567,8 @@ Resources:
               - !Ref "QSS3BucketRegion"
       Parameters:
         ApplianceHostname: !Ref VSensorApplianceHostname
-        AppliancePort: !Ref VSensorAppliancePort
         AppliancePushtoken: !Ref VSensorAppliancePushtoken
+        ApplianceProxy: !Ref VSensorApplianceProxy
         VsensorUpdatekey: !Ref VSensorUpdatekey
         osSensorHMAC: !Ref VSensorOsSensorHMAC
         Subnets:
@@ -609,9 +604,6 @@ Resources:
         VpcCIDRBlock: !Ref VPCCIDR
         SshCIDRBlock: !Ref VPCCIDR
         KeyPairName: !Ref VSensorKeyPairName
-        QSS3BucketName: !Ref QSS3BucketName
-        QSS3BucketRegion: !Ref QSS3BucketRegion
-        QSS3KeyPrefix: !Ref QSS3KeyPrefix
         ShortID: !GetAtt ShortIDRand.IDString
       Tags:
         - Key: "Name"

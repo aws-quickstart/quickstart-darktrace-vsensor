@@ -408,7 +408,7 @@ Resources:
     Metadata:
       cfn-lint:
         config:
-          ignore_checks: [E2531]
+          ignore_checks: [E3030]
     Condition: GenerateShortID
     Properties:
       Code:

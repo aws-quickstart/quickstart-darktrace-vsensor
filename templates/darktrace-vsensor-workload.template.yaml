@@ -8,14 +8,15 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Darktrace appliance configuration
+          default: Darktrace Instance configuration
         Parameters:
-          - ApplianceHostname
-          - AppliancePushtoken
-          - ApplianceProxy
+          - DarktraceInstanceHostname
+          - DarktraceInstancePushtoken
+          - DarktraceInstanceProxy
       - Label:
           default: Darktrace vSensor configuration
         Parameters:
+          - SessionManagerEnable
           - InstanceType
           - KeyPairName
           - InstanceSecurityGroups
@@ -49,14 +50,16 @@ Metadata:
 
 
     ParameterLabels:
-      # Appliance Config
-      ApplianceHostname:
-        default: Appliance host name
-      AppliancePushtoken:
-        default: Appliance push token
-      ApplianceProxy:
-        default: Appliance proxy
+      # Darktrace Instance Config
+      DarktraceInstanceHostname:
+        default: Darktrace Instance host name
+      DarktraceInstancePushtoken:
+        default: Darktrace Instance push token
+      DarktraceInstanceProxy:
+        default: Darktrace Instance proxy URL
       # vSensor Config
+      SessionManagerEnable:
+        default: Deploy with AWS Session Manager?
       InstanceType:
         default: EC2 instance type
       KeyPairName:
@@ -99,20 +102,27 @@ Metadata:
         default: Quick Start unique run ID (12 characters or less)
 
 Parameters:
-  # Appliance Config
+  # Darktrace Instance Config
 
-  ApplianceHostname:
+  DarktraceInstanceHostname:
     Type: AWS::SSM::Parameter::Name
-    Description: "Systems Manager Parameter name: Host name of the Darktrace master instance (e.g. https://mastername.cloud.darktrace.com:443). HTTPS Protocol prefix and port suffix are optional. Defaults to port 443."
-  AppliancePushtoken:
+    Description: "Systems Manager Parameter name: Host name of the Darktrace instance (e.g. https://instancename.cloud.darktrace.com:443). HTTPS Protocol prefix and port suffix are optional. Defaults to port 443."
+  DarktraceInstancePushtoken:
     Type: AWS::SSM::Parameter::Name
-    Description: "Systems Manager Parameter name: Push token to authenticate with the master instance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]."
-  ApplianceProxy:
+    Description: "Systems Manager Parameter name: Push token to authenticate with the Darktrace instance. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]."
+  DarktraceInstanceProxy:
     Type: AWS::SSM::Parameter::Name
-    Description: "Systems Manager Parameter name: Proxy to access the master instance, include HTTP protocol and optional auth (e.g. http://user:pass@hostname:port). For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]. Set SSM parameter to 'none' to disable."
+    Description: "Systems Manager Parameter name: Proxy to access the Darktrace instance, include HTTP protocol and optional auth (e.g. http://user:pass@hostname:port). For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]. Set SSM parameter to 'none' to disable."
 
   # vSensor Config
 
+  SessionManagerEnable:
+    Default: 'Yes'
+    Description: Configures IAM permissions to enable AWS Systems Manager Sessions to access vSensors remotely. See QuickStart Deployment guide section "Using AWS Sessions Manager". Typically you may use this instead of the Bastion options.
+    Type: String
+    AllowedValues:
+      - 'Yes'
+      - 'No'
   InstanceType:
     Default: t3.medium
     Type: String
@@ -224,6 +234,12 @@ Conditions:
   NotUsingExtraInstanceSecurityGroups: !Equals
     - !Join [",", !Ref "InstanceSecurityGroups"]
     - ""
+  AllowSessionsManager: !Equals 
+    - !Ref SessionManagerEnable
+    - "Yes"
+  GenerateShortID: !Equals
+    - !Ref ShortID
+    - ""
 
 Resources:
 
@@ -233,6 +249,7 @@ Resources:
   # Modified to take a user submitted ShortID and return this if provided, else generate the random value.
   LambdaExecutionRole:
     Type: AWS::IAM::Role
+    Condition: GenerateShortID
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -246,6 +263,7 @@ Resources:
 
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function
+    Condition: GenerateShortID
     Properties:
       Code:
         ZipFile: >
@@ -284,12 +302,14 @@ Resources:
 
   RandomStringLambdaLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: GenerateShortID
     Properties:
       LogGroupName: !Sub "/aws/lambda/${RandomStringLambdaFunction}"
       RetentionInDays: !Ref LogGroupRetention
 
   RandomStringLambdaLogPermissions:
     Type: AWS::IAM::Policy
+    Condition: GenerateShortID
     Properties:
       Roles:
         - !Ref LambdaExecutionRole
@@ -308,6 +328,7 @@ Resources:
 
   ShortIDRand:
     Type: AWS::CloudFormation::CustomResource
+    Condition: GenerateShortID
     DependsOn: RandomStringLambdaLogPermissions
     Properties:
       Length: 12
@@ -321,7 +342,10 @@ Resources:
       GroupName:
         !Sub
           - "${ShortID}-vSensor-SG"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       VpcId: !Ref DeploymentVPC
       # SSH Access is configurable by customer
       # kics-scan ignore-line
@@ -556,7 +580,7 @@ Resources:
               bash <(wget -O - https://packages-cdn.darktrace.com/install) --updateKey ${VsensorUpdatekey} --updateKeyType AWS:SSM
 
               echo "Setting configuration"
-              set_pushtoken.sh -t "AWS:SSM" "${AppliancePushtoken}" "${ApplianceHostname}" "${ApplianceProxy}"
+              set_pushtoken.sh -t "AWS:SSM" "${DarktraceInstancePushtoken}" "${DarktraceInstanceHostname}" "${DarktraceInstanceProxy}"
               set_ossensor_loadbalancer_direct.sh 1
               set_ephemeral.sh 1 # Configure vSensor for use in ASG.
               if [ -n "${osSensorHMAC}" ]; then
@@ -573,10 +597,16 @@ Resources:
               echo "Userdata script complete."
             - autoScalingGroupName: !Sub
                 - "${ShortID}-vSensor-ASG"
-                - ShortID: !GetAtt ShortIDRand.IDString
+                - ShortID: !If
+                  - GenerateShortID
+                  - !GetAtt ShortIDRand.IDString
+                  - !Ref ShortID
               lifecycleHookName: !Sub
                 - "${ShortID}-vSensor-LifecycleHook"
-                - ShortID: !GetAtt ShortIDRand.IDString
+                - ShortID: !If
+                  - GenerateShortID
+                  - !GetAtt ShortIDRand.IDString
+                  - !Ref ShortID
         KeyName: !Ref KeyPairName
         InstanceType: !Ref InstanceType
         BlockDeviceMappings:
@@ -607,7 +637,10 @@ Resources:
       LaunchTemplateName:
         !Sub
           - "${ShortID}-vSensor-Launch-Template"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
 
   vSensorLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -615,8 +648,51 @@ Resources:
       LogGroupName:
         !Sub
           - "${ShortID}-vSensor-Logs"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       RetentionInDays: !Ref LogGroupRetention
+      KmsKeyId: !GetAtt vSensorLogKMSKey.Arn
+
+  vSensorLogKMSKey:
+    Type: 'AWS::KMS::Key'
+    Properties:
+      Description: KMS Key to allow CloudWatch and SSM Session Manager Session logs to be encrypted
+      Enabled: True
+      EnableKeyRotation: True
+      # Ignore :root wildcard for KMS, this is a default AWS requirement
+      # See: https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-default.html
+      # kics-scan ignore-line
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "key-default-1"
+        Statement:
+          - Sid: "Enable IAM User Permission for this account (AWS Default Key Policy)"
+            Effect: Allow
+            Principal:
+              AWS : !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Allow encrypted logs"
+            Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnEquals:
+                "kms:EncryptionContext:aws:logs:arn": !Sub
+                  - "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ShortID}-vSensor-Logs"
+                  - ShortID: !If
+                    - GenerateShortID
+                    - !GetAtt ShortIDRand.IDString
+                    - !Ref ShortID
 
   TrafficMirrorTarget:
     Type: 'AWS::EC2::TrafficMirrorTarget'
@@ -628,7 +704,10 @@ Resources:
           Value:
             !Sub
               - "${ShortID}-vSensor-Traffic-Mirror-Target"
-              - ShortID: !GetAtt ShortIDRand.IDString
+              - ShortID: !If
+                - GenerateShortID
+                - !GetAtt ShortIDRand.IDString
+                - !Ref ShortID
 
   TrafficMirrorFilter:
     Type: 'AWS::EC2::TrafficMirrorFilter'
@@ -639,7 +718,10 @@ Resources:
           Value:
             !Sub
               - "${ShortID}-vSensor-Traffic-Filter"
-              - ShortID: !GetAtt ShortIDRand.IDString
+              - ShortID: !If
+                - GenerateShortID
+                - !GetAtt ShortIDRand.IDString
+                - !Ref ShortID
 
   TrafficMirrorFilterRuleIngress:
     Type: AWS::EC2::TrafficMirrorFilterRule
@@ -669,7 +751,10 @@ Resources:
       Name:
         !Sub
           - "${ShortID}-vSensor-ASG-UDP4789"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /healthcheck
@@ -689,7 +774,10 @@ Resources:
       Name:
         !Sub
           - "${ShortID}-vSensor-ASG-TCP443"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /healthcheck
@@ -709,7 +797,10 @@ Resources:
       Name:
         !Sub
           - "${ShortID}-vSensor-ASG-TCP80"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /healthcheck
@@ -730,7 +821,10 @@ Resources:
       # Give the Autoscaling group itself a name.
       AutoScalingGroupName: !Sub
         - "${ShortID}-vSensor-ASG"
-        - ShortID: !GetAtt ShortIDRand.IDString
+        - ShortID: !If
+          - GenerateShortID
+          - !GetAtt ShortIDRand.IDString
+          - !Ref ShortID
       MinSize: !Ref MinSizeASG
       MaxSize: !Ref MaxSizeASG
       MetricsCollection:
@@ -755,11 +849,17 @@ Resources:
           Value:
             !Sub
               - "${ShortID}-vSensor-ASG"
-              - ShortID: !GetAtt ShortIDRand.IDString
+              - ShortID: !If
+                - GenerateShortID
+                - !GetAtt ShortIDRand.IDString
+                - !Ref ShortID
       LifecycleHookSpecificationList:
         - LifecycleHookName: !Sub
             - "${ShortID}-vSensor-LifecycleHook"
-            - ShortID: !GetAtt ShortIDRand.IDString
+            - ShortID: !If
+              - GenerateShortID
+              - !GetAtt ShortIDRand.IDString
+              - !Ref ShortID
           DefaultResult: ABANDON
           HeartbeatTimeout: 900
           LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
@@ -788,7 +888,10 @@ Resources:
       BucketName:
         !Sub
           - "${ShortID}-vsensor-pcaps"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       LoggingConfiguration:
         LogFilePrefix: "s3logging"
 
@@ -828,7 +931,10 @@ Resources:
       Policies:
         - PolicyName: !Sub
             - "${ShortID}-vSensor-S3CleanupLambdaPolicy"
-            - ShortID: !GetAtt ShortIDRand.IDString
+            - ShortID: !If
+              - GenerateShortID
+              - !GetAtt ShortIDRand.IDString
+              - !Ref ShortID
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -950,14 +1056,20 @@ Resources:
       Description: cleanup Bucket on Delete Lambda Lambda function.
       FunctionName: !Sub
         - "${ShortID}-vSensor-PCAPS-Cleanup"
-        - ShortID: !GetAtt ShortIDRand.IDString
+        - ShortID: !If
+          - GenerateShortID
+          - !GetAtt ShortIDRand.IDString
+          - !Ref ShortID
       Handler: index.lambda_handler
       Role: !GetAtt CleanupBucketOnDeleteLambdaRole.Arn
       Runtime: python3.8
       Timeout: 60
       Tags:
         - Key: darktrace-vsensor-quickstart
-          Value: !Ref ShortID
+          Value: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       TracingConfig:
         Mode: Active
 
@@ -1002,7 +1114,10 @@ Resources:
       Name:
         !Sub
           - "${ShortID}-vSensor-Balancer"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       LoadBalancerAttributes:
         - Key: load_balancing.cross_zone.enabled
           Value: 'true'
@@ -1051,7 +1166,10 @@ Resources:
       InstanceProfileName:
         !Sub
           - "${ShortID}-vSensor-IAM-Instance-Profile"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
 
   vSensorIamRole:
     Type: 'AWS::IAM::Role'
@@ -1059,7 +1177,10 @@ Resources:
       RoleName:
         !Sub
           - "${ShortID}-vSensor-IAM-Role"
-          - ShortID: !GetAtt ShortIDRand.IDString
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -1105,7 +1226,10 @@ Resources:
                   - "arn:${AWS::Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/${AutoScalingGroupName}"
                   - AutoScalingGroupName: !Sub
                     - "${ShortID}-vSensor-ASG"
-                    - ShortID: !GetAtt ShortIDRand.IDString
+                    - ShortID: !If
+                      - GenerateShortID
+                      - !GetAtt ShortIDRand.IDString
+                      - !Ref ShortID
         - PolicyName: "AllowSourceDestCheckModificationPolicy"
           PolicyDocument:
             Statement:
@@ -1116,31 +1240,82 @@ Resources:
           PolicyDocument:
             Statement:
             - Effect: "Allow"
-              Action: "ssm:GetParameter*"
+              Action:
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
               Resource:
                 - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${VsensorUpdatekey}"
-                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplianceHostname}"
-                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppliancePushtoken}"
-                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplianceProxy}"
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${DarktraceInstanceHostname}"
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${DarktraceInstancePushtoken}"
+                - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${DarktraceInstanceProxy}"
                 - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${osSensorHMAC}"
-        - PolicyName: "AllowSSMSessions"
+        - PolicyName: "AllowEncryptedCloudWatchLogging"
           PolicyDocument:
             Statement:
-            - Effect: "Allow"
-              Action:
-                - "ssmmessages:CreateControlChannel"
-                - "ssmmessages:CreateDataChannel"
-                - "ssmmessages:OpenControlChannel"
-                - "ssmmessages:OpenDataChannel"
-              Resource: "*"
-            - Effect: "Allow"
-              Action:
-                - "s3:GetEncryptionConfiguration"
-              Resource: "*"
-            - Effect: "Allow"
-              Action:
-                - "ssm:UpdateInstanceInformation"
-              Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "logs:DescribeLogGroups"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"
+        - !If
+          - AllowSessionsManager
+          - PolicyName: "AllowSSMSessions"
+            PolicyDocument:
+              Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ssmmessages:CreateControlChannel"
+                  - "ssmmessages:CreateDataChannel"
+                  - "ssmmessages:OpenControlChannel"
+                  - "ssmmessages:OpenDataChannel"
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "s3:GetEncryptionConfiguration"
+                Resource: !Sub "arn:${AWS::Partition}:s3:::*"
+              - Effect: "Allow"
+                Action:
+                  - "ssm:UpdateInstanceInformation"
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "kms:Decrypt"
+                Resource:
+                  - !GetAtt vSensorLogKMSKey.Arn
+          - Ref: AWS::NoValue
+
+  SessionsManagerDocument:
+    Type: AWS::SSM::Document
+    Condition: AllowSessionsManager
+    Properties:
+      Name:
+        !Sub
+          - "${ShortID}-vSensor-SSM-Session-Settings"
+          - ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
+      DocumentFormat: YAML
+      DocumentType: Session
+      Content:
+        schemaVersion: "1.0"
+        description: Session Manager logging settings document for using Session Manager to connect to vSensors
+        sessionType: "Standard_Stream"
+        inputs:
+          s3BucketName: ""
+          s3KeyPrefix: ""
+          s3EncryptionEnabled: true
+          cloudWatchLogGroupName: !Ref vSensorLogGroup
+          cloudWatchEncryptionEnabled: true
+          idleSessionTimeout: "20"
+          maxSessionDuration: ""
+          cloudWatchStreamingEnabled: true
+          kmsKeyId: !Ref vSensorLogKMSKey
+          runAsEnabled: false
+          runAsDefaultUser: ""
+          shellProfile:
+            linux: "TOKEN=`curl -X PUT \"http://169.254.169.254/latest/api/token\" -H \"X-aws-ec2-metadata-token-ttl-seconds: 120\" -s`\nINSTANCE_ID=`curl -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/instance-id -s`\nDATE=`date --iso-8601='ns'`\necho \"\"\necho \"\"; echo \"#######################################################\"; echo \"#                                                     #\"; echo \"# Session start: $DATE  #\"; echo \"#                                                     #\"; echo \"# Instance ID:  $INSTANCE_ID                   #\"; echo \"#                                                     #\";  echo \"#######################################################\"\necho \"\""
+            windows: ""
 
 
 Outputs:
@@ -1163,6 +1338,16 @@ Outputs:
   TrafficMirrorTargetId:
     Description: ID of the Traffic Mirror target generated for Traffic Mirror sessions.
     Value: !Ref TrafficMirrorTarget
+
+  SessionManagerPreferences:
+    Condition: AllowSessionsManager
+    Description: Session Manager logging settings document for using Session Manager to connect to vSensors.
+    Value: !Ref SessionsManagerDocument
+
+  SessionManagerKMSKeyId:
+    Condition: AllowSessionsManager
+    Description: When using the web-based Session Manager terminal, you must set your preferences with this KMS Key ID for encryption to be enabled.
+    Value: !GetAtt vSensorLogKMSKey.KeyId
 
   Postdeployment:
     Description: See the deployment guide for post-deployment steps.

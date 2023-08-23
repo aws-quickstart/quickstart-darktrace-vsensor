@@ -34,12 +34,12 @@ resources:
       parameter_value: c4ct
     - parameter_key: VPCCIDR
       parameter_value: 10.0.0.0/16
-    - parameter_key: VSensorApplianceHostname
-      parameter_value: https://darktrace.com
-    - parameter_key: VSensorAppliancePort
-      parameter_value: "443"
-    - parameter_key: VSensorAppliancePushtoken
-      parameter_value: aws-quickstart-pushtoken:12345678abcdefg
+    - parameter_key: DarktraceInstanceHostname
+      parameter_value: _get_ssm_secure_string_/qs/darktrace/DarktraceInstanceHostname
+    - parameter_key: DarktraceInstanceProxy
+      parameter_value: _get_ssm_secure_string_/qs/darktrace/DarktraceInstanceProxy
+    - parameter_key: DarktraceInstancePushtoken
+      parameter_value: _get_ssm_secure_string_/qs/darktrace/DarktraceInstancePushtoken
     - parameter_key: VSensorDesiredCapacityASG
       parameter_value: "1"
     - parameter_key: VSensorInstanceType
@@ -62,6 +62,8 @@ resources:
       parameter_value: 0.0.0.0/0
     - parameter_key: VSensorUpdatekey
       parameter_value: _get_ssm_secure_string_/qs/darktrace/VSensorUpdateKey
+    - parameter_key: VSensorOsSensorHMAC
+      parameter_value: _get_ssm_secure_string_/qs/darktrace/osSensorHMAC
     deploy_method: stack_set
     deployment_targets:
       organizational_units:

@@ -26,14 +26,15 @@ Metadata:
         - BastionKeyPairName
         - BastionAMIOS
     - Label:
-        default: Darktrace appliance configuration
+        default: Darktrace Instance configuration
       Parameters:
-        - VSensorApplianceHostname
-        - VSensorAppliancePushtoken
-        - VSensorApplianceProxy
+        - DarktraceInstanceHostname
+        - DarktraceInstancePushtoken
+        - DarktraceInstanceProxy
     - Label:
         default: Darktrace vSensor configuration
       Parameters:
+        - SessionManagerEnable
         - VSensorInstanceType
         - VSensorKeyPairName
         - VSensorUpdatekey
@@ -89,17 +90,19 @@ Metadata:
       BastionAMIOS:
         default: Bastion host AMI operating system
 
-      # Appliance Config
+      # Darktrace Instance Config
 
-      VSensorApplianceHostname:
-        default: Appliance host name
-      VSensorAppliancePushtoken:
-        default: Appliance push token 
-      VSensorApplianceProxy:
-        default: Appliance proxy
+      DarktraceInstanceHostname:
+        default: Darktrace Instance host name
+      DarktraceInstancePushtoken:
+        default: Darktrace Instance push token 
+      DarktraceInstanceProxy:
+        default: Darktrace Instance proxy URL
 
       # vSensor Config
 
+      SessionManagerEnable:
+        default: Deploy with AWS Session Manager?
       VSensorInstanceType:
         default: EC2 instance type
       VSensorKeyPairName:
@@ -143,20 +146,27 @@ Metadata:
         default: Quick Start unique run ID (12 characters or less)
 
 Parameters:
-  # Appliance Config
+  # Darktrace Instance Config
 
-  VSensorApplianceHostname:
+  DarktraceInstanceHostname:
     Type: AWS::SSM::Parameter::Name
-    Description: "Systems Manager Parameter name: Host name of the Darktrace master instance (e.g. https://mastername.cloud.darktrace.com:443). HTTPS Protocol prefix and port suffix are optional. Defaults to port 443."
-  VSensorAppliancePushtoken:
+    Description: "Systems Manager Parameter name: Host name of the Darktrace instance (e.g. https://instancename.cloud.darktrace.com:443). HTTPS Protocol prefix and port suffix are optional. Defaults to port 443."
+  DarktraceInstancePushtoken:
     Type: AWS::SSM::Parameter::Name
-    Description: "Systems Manager Parameter name: Push token to authenticate with the master instance. Include both parts including colon separator. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]."
-  VSensorApplianceProxy:
+    Description: "Systems Manager Parameter name: Push token to authenticate with the Darktrace instance. Include both parts including colon separator. For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]."
+  DarktraceInstanceProxy:
     Type: AWS::SSM::Parameter::Name
-    Description: "Systems Manager Parameter name: Proxy to access the master instance, include HTTP protocol and optional auth (e.g. http://user:pass@hostname:port). For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]. Set SSM parameter to 'none' to disable."
+    Description: "Systems Manager Parameter name: Proxy to access the Darktrace instance, include HTTP protocol and optional auth (e.g. http://user:pass@hostname:port). For more information, see the https://customerportal.darktrace.com/login[Darktrace Customer Portal]. Set SSM parameter to 'none' to disable."
 
   # VSensor Config
 
+  SessionManagerEnable:
+    Default: 'Yes'
+    Description: Configures IAM permissions to enable AWS Systems Manager Sessions to access vSensors remotely. See QuickStart Deployment guide section "Using AWS Sessions Manager". Typically you may use this instead of the Bastion options.
+    Type: String
+    AllowedValues:
+      - 'Yes'
+      - 'No'
   VSensorInstanceType:
     Default: t3.medium
     Type: String
@@ -365,6 +375,12 @@ Conditions:
   CreateBastion: !Equals 
     - !Ref BastionEnable
     - "Yes"
+  AllowSessionsManager: !Equals 
+    - !Ref SessionManagerEnable
+    - "Yes"
+  GenerateShortID: !Equals
+    - !Ref ShortID
+    - ""
 
 Resources:
 
@@ -374,6 +390,7 @@ Resources:
   # Modified to take a user submitted ShortID and return this if provided, else generate the random value.
   LambdaExecutionRole:
     Type: AWS::IAM::Role
+    Condition: GenerateShortID
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -387,6 +404,7 @@ Resources:
 
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function
+    Condition: GenerateShortID
     Properties:
       Code:
         ZipFile: >
@@ -425,12 +443,14 @@ Resources:
 
   RandomStringLambdaLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: GenerateShortID
     Properties:
       LogGroupName: !Sub "/aws/lambda/${RandomStringLambdaFunction}"
       RetentionInDays: !Ref VSensorLogGroupRetention
       
   RandomStringLambdaLogPermissions:
     Type: AWS::IAM::Policy
+    Condition: GenerateShortID
     Properties:
       Roles:
         - !Ref LambdaExecutionRole
@@ -449,6 +469,7 @@ Resources:
 
   ShortIDRand:
     Type: AWS::CloudFormation::CustomResource
+    Condition: GenerateShortID
     DependsOn: RandomStringLambdaLogPermissions
     Properties:
       Length: 12
@@ -493,7 +514,10 @@ Resources:
           Value:
             !Sub
               - "${ShortID}-vSensor-VPC-Stack"
-              - ShortID: !GetAtt ShortIDRand.IDString
+              - ShortID: !If
+                - GenerateShortID
+                - !GetAtt ShortIDRand.IDString
+                - !Ref ShortID
 
   BastionStack:
 
@@ -518,7 +542,10 @@ Resources:
         BastionHostName:
           !Sub
             - "${ShortID}-vSensor-Bastion"
-            - ShortID: !GetAtt ShortIDRand.IDString
+            - ShortID: !If
+              - GenerateShortID
+              - !GetAtt ShortIDRand.IDString
+              - !Ref ShortID
         BastionAMIOS:
           Ref: BastionAMIOS
         BastionInstanceType:
@@ -545,7 +572,10 @@ Resources:
           Value:
             !Sub
               - "${ShortID}-vSensor-Bastion-Stack"
-              - ShortID: !GetAtt ShortIDRand.IDString
+              - ShortID: !If
+                - GenerateShortID
+                - !GetAtt ShortIDRand.IDString
+                - !Ref ShortID
 
   VSensorStack:
     
@@ -566,9 +596,9 @@ Resources:
               - !Ref "AWS::Region"
               - !Ref "QSS3BucketRegion"
       Parameters:
-        ApplianceHostname: !Ref VSensorApplianceHostname
-        AppliancePushtoken: !Ref VSensorAppliancePushtoken
-        ApplianceProxy: !Ref VSensorApplianceProxy
+        DarktraceInstanceHostname: !Ref DarktraceInstanceHostname
+        DarktraceInstancePushtoken: !Ref DarktraceInstancePushtoken
+        DarktraceInstanceProxy: !Ref DarktraceInstanceProxy
         VsensorUpdatekey: !Ref VSensorUpdatekey
         osSensorHMAC: !Ref VSensorOsSensorHMAC
         Subnets:
@@ -603,14 +633,21 @@ Resources:
         TrafficMirrorDestCIDR: !Ref VSensorTrafficMirrorDestCIDR
         VpcCIDRBlock: !Ref VPCCIDR
         SshCIDRBlock: !Ref VPCCIDR
+        SessionManagerEnable: !Ref SessionManagerEnable
         KeyPairName: !Ref VSensorKeyPairName
-        ShortID: !GetAtt ShortIDRand.IDString
+        ShortID: !If
+            - GenerateShortID
+            - !GetAtt ShortIDRand.IDString
+            - !Ref ShortID
       Tags:
         - Key: "Name"
           Value:
             !Sub
               - "${ShortID}-vSensor-Stack"
-              - ShortID: !GetAtt ShortIDRand.IDString
+              - ShortID: !If
+                - GenerateShortID
+                - !GetAtt ShortIDRand.IDString
+                - !Ref ShortID
 
 Outputs:
 
@@ -643,7 +680,7 @@ Outputs:
           - Outputs.PublicSubnet2ID
 
   NatGatewayEIPs:
-    Description: Elastic IPs allocated to subnets, allow these access to your Appliance.
+    Description: Elastic IPs allocated to subnets, allow these access to your Darktrace Instance.
     Value: !Join
       - ","
       - - Fn::GetAtt:
@@ -688,6 +725,23 @@ Outputs:
       - VSensorStack
       - Outputs.BucketName
   
+  SessionManagerPreferences:
+    Condition: AllowSessionsManager
+    Description: Session Manager logging settings document for using Session Manager to connect to vSensors.
+    Value:
+      Fn::GetAtt:
+      - VSensorStack
+      - Outputs.SessionManagerPreferences
+
+  SessionManagerKMSKeyId:
+    Condition: AllowSessionsManager
+    Description: When using the web-based Session Manager terminal, you must set your preferences with this KMS Key ID for encryption to be enabled.
+    Value:
+      Fn::GetAtt:
+      - VSensorStack
+      - Outputs.SessionManagerKMSKeyId
+
+
   Postdeployment:
     Description: See the deployment guide for post-deployment steps.
     Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.sortDate&quickstart-all.sort-order=desc&awsm.page-quickstart-all=5

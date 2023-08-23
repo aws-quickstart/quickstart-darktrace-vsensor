@@ -657,6 +657,10 @@ Resources:
 
   vSensorLogKMSKey:
     Type: 'AWS::KMS::Key'
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks: [EIAMPolicyActionWildcard, EIAMPolicyWildcardResource]
     Properties:
       Description: KMS Key to allow CloudWatch and SSM Session Manager Session logs to be encrypted
       Enabled: True

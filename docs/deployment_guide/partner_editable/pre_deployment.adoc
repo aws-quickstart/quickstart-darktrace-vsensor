@@ -9,9 +9,9 @@ The Quick Start now uses AWS Systems Manager Parameter Store to hold the configu
 https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-su-create.html[Create^] separate "Secure String" SSM Parameters in the expected AWS region for each of the following:
 
 . vSensor Update Key (e.g. `abcdefg:12345678`)
-. Master Instance Hostname (e.g. `https://mastername.cloud.darktrace.com:443`)
-. Master Instance Push Token (e.g. `vsensor-push-token:123456abcdefg`)
-. Master Instance Proxy (e.g. `http://proxyname.example.com:3128`, `http://username@password:proxyname.example.com:3128` or `none` to not use a proxy)
+. Darktrace Instance Hostname (e.g. `https://instancename.cloud.darktrace.com:443`)
+. Darktrace Instance Push Token (e.g. `vsensor-push-token:123456abcdefg`)
+. Darktrace Instance Proxy (e.g. `http://proxyname.example.com:3128`, `http://username@password:proxyname.example.com:3128` or `none` to not use a proxy)
 . osSensor HMAC (e.g. `ossensorhmac123456abcdefg` or `none` to disable osSensor support)
 
 You will provide the parameter names to the CloudFormation template, for the vSensor to automatically decrypt these values on start up.
@@ -22,14 +22,14 @@ NOTE: Please review https://docs.aws.amazon.com/autoscaling/ec2/userguide/asg-in
 
 === Register a push token
 
-Register a new push token to enable connection between vSensor probes and an existing Darktrace on-premise or cloud appliance. All of the vSensor instances in this deployment share the same push token.
+Register a new push token to enable connection between vSensor probes and an existing Darktrace on-premise or cloud instance. All of the vSensor instances in this deployment share the same push token.
 
 . Log into the Darktrace console.
 . On the main menu, choose *Admin > System Config*.
 . In the *Push Probe Tokens* section, enter a label for the vSensor deployment.
 . Choose *Add*. A token is generated in the form of `[label:string]`. 
-. Record the token, as it only displays once. You must enter the token in the *Appliance push token* link:#_parameter_reference[parameter] field during Quick Start deployment.
+. Record the token, as it only displays once. You must enter the token in the *Darktrace Instance push token* link:#_parameter_reference[parameter] field during Quick Start deployment.
 
-If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT Gateways after deployment. For more information, see link:#post-deployment-steps[Post deployment steps], later in this guide.
+If your Darktrace Instance is behind a firewall, you must grant access to the instance from the IP addresses of your NAT Gateways after deployment. For more information, see link:#post-deployment-steps[Post deployment steps], later in this guide.
 
-NOTE: Darktrace cloud appliances are already configured to allow push token access, no firewall changes are necessary.
+NOTE: Darktrace cloud instances are already configured to allow push token access, no firewall changes are necessary.

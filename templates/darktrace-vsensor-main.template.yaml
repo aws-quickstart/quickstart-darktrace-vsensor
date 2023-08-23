@@ -404,6 +404,11 @@ Resources:
 
   RandomStringLambdaFunction:
     Type: AWS::Lambda::Function
+    # Ignore nodejs18 not defined yet in QuickStart cfn-lint CI version
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks: [E2531]
     Condition: GenerateShortID
     Properties:
       Code:

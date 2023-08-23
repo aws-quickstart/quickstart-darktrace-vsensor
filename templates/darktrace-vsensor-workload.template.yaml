@@ -679,11 +679,13 @@ Resources:
             Principal:
               Service: !Sub "logs.${AWS::Region}.amazonaws.com"
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey*"
-              - "kms:Describe*"
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncryptTo"
+              - "kms:ReEncryptFrom"
+              - "kms:GenerateDataKey"
+              - "kms:DescribeKey"
+              - "kms:DescribeCustomKeyStores"
             Resource: "*"
             Condition:
               ArnEquals:

@@ -11,7 +11,9 @@ project:
     RemoteAccessCIDR: "127.0.0.1/32"
     DarktraceInstanceHostname: "https://darktrace.com"
     DarktraceInstancePushtoken: "aws-quickstart-pushtoken:12345678abcdefg" #gitleaks:allow
+    DarktraceInstanceProxy: "none"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
+    VSensorOsSensorHMAC: "none"
     VSensorKeyPairName: $[taskcat_getkeypair]
   template: templates/darktrace-vsensor-main.template.yaml
 tests:

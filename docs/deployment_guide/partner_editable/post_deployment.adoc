@@ -4,7 +4,7 @@
 
 === Configure networking
 
-If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the *NatGatewayEIPs* on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.
+If your Darktrace instance is behind a firewall, you must grant access to the instance from the IP addresses of your NAT gateways. For a new VPC deployment, use the *NatGatewayEIPs* on the *Outputs* tab of the stack in the https://console.aws.amazon.com/cloudfront/home?[AWS CloudFormation console^]. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.
 
 === Configure traffic mirroring
 
@@ -29,3 +29,15 @@ This deployment follows AWS security best practices for network security. The vS
 To gain root access to vSensor instances, use the `ubuntu` user name and the EC2 key pair link:#_parameter_reference[parameter] you entered during deployment as the private key path. Then sudo to root. The EC2 key pair is also required to access `ec2-user` of the bastion hosts. For more information, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html[Connect to your Linux instance using SSH^].
 
 The bastion hosts deployed by this Quick Start are set to update automatically. The deployed vSensors are configured to receive the latest security and product updates daily from Darktrace and Ubuntu package repositories.
+
+=== Using AWS Sessions Manager
+
+When connecting via the AWS Systems Manager Session Manager it is recommended to use the session/preferences document created by the template.
+
+This will make sure that the session is encrypted and logged (in the same CloudWatch Log group as the vSensors logs). That is the same kms key that is used for encrypting log data in CloudWatch Logs.
+
+For the Systems Manager Session Manager allowed users you can Enforce a session document permission check for the AWS CLI. The name of the session/preferences document is in the Outputs.
+
+Example: `aws ssm start-session --target <instance_id> --document-name <session_manager_preferences_name>.`
+
+In the Sessions Manager web console, each user must set their https://docs.aws.amazon.com/systems-manager/latest/userguide/session-preferences-enable-encryption.html[Session Manager Preferences^] to use the KMS Key ID and Log Group if encrypted sessions and logging are required.

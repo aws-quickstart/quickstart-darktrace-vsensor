@@ -9,9 +9,11 @@ project:
     BastionKeyPairName: $[taskcat_getkeypair]
     AvailabilityZones: $[taskcat_getaz_2]
     RemoteAccessCIDR: "127.0.0.1/32"
-    VSensorApplianceHostname: "https://darktrace.com"
-    VSensorAppliancePushtoken: "aws-quickstart-pushtoken:12345678abcdefg"
+    DarktraceInstanceHostname: "https://darktrace.com"
+    DarktraceInstancePushtoken: "aws-quickstart-pushtoken:12345678abcdefg" #gitleaks:allow
+    DarktraceInstanceProxy: "none"
     VSensorUpdatekey: "XXXXXXXXX:XXXXXXXX"
+    VSensorOsSensorHMAC: "none"
     VSensorKeyPairName: $[taskcat_getkeypair]
   template: templates/darktrace-vsensor-main.template.yaml
 tests:

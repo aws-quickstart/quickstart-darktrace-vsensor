@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.17">
+<meta name="generator" content="Asciidoctor 2.0.16">
 <meta name="description" content="Darktrace vSensor Deployment Guide on AWS">
-<meta name="keywords" content="Quick Start, AWS, Darktrace vSensor">
-<title>Darktrace vSensor on the AWS Cloud</title>
+<meta name="keywords" content="Partner Solution, AWS, Darktrace vSensor">
+<title>Darktrace vSensor on AWS</title>
 <style>
 /* Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
 /* Uncomment @import statement to use as custom stylesheet */
@@ -864,6 +864,7 @@ p.footer-text a{color:#d7d8d8}
 <li><a href="#_deployment_options">Deployment options</a></li>
 <li><a href="#_predeployment_steps">Predeployment steps</a>
 <ul class="sectlevel2">
+<li><a href="#_generate_aws_systems_manager_parameters">Generate AWS Systems Manager parameters</a></li>
 <li><a href="#_register_a_push_token">Register a push token</a></li>
 </ul>
 </li>
@@ -875,9 +876,15 @@ p.footer-text a{color:#d7d8d8}
 <li><a href="#_test_the_deployment">Test the deployment</a></li>
 <li><a href="#_network_security">Network security</a></li>
 <li><a href="#_os_security">OS security</a></li>
+<li><a href="#_using_aws_sessions_manager">Using AWS Sessions Manager</a></li>
 </ul>
 </li>
-<li><a href="#_troubleshooting">Troubleshooting</a></li>
+<li><a href="#_troubleshooting">Troubleshooting</a>
+<ul class="sectlevel2">
+<li><a href="#_auto_scaling_group_asg_fails">Auto Scaling Group (ASG) Fails</a></li>
+</ul>
+</li>
+<li><a href="#_customer_responsibility">Customer responsibility</a></li>
 <li><a href="#_feedback">Feedback</a></li>
 <li><a href="#_notices">Notices</a></li>
 </ul>
@@ -886,21 +893,21 @@ p.footer-text a{color:#d7d8d8}
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
-<h2 id="_darktrace_vsensor_on_the_aws_cloud" class="discrete text-center">Darktrace vSensor on the AWS Cloud</h2>
-<h2 id="_quick_start_deployment_guide" class="discrete text-left text-center">Quick Start Deployment Guide</h2>
+<h2 id="_darktrace_vsensor_on_aws" class="discrete text-center">Darktrace vSensor on AWS</h2>
+<h2 id="_partner_solution_deployment_guide" class="discrete text-left text-center">Partner Solution Deployment Guide</h2>
 <div class="imageblock text-center">
 <div class="content">
 <img src="https://aws-quickstart.s3.amazonaws.com/docs/deployment-guide/aws-quickstart-deployment-graphic.png" alt="QS" width="80" height="80">
 </div>
 </div>
 <div class="paragraph text-center">
-<p><strong>July 2022</strong><br>
+<p><strong>August 2023</strong><br>
 <em>Development Team Documentations at Darktrace</em><br>
 <em>Tony Bulding, AWS Integration &amp; Automation team</em><br></p>
 </div>
 <div class="imageblock text-left image-container">
 <div class="content">
-<img src="https://aws-quickstart.s3.amazonaws.com/quickstart-darktrace-vsensor/docs/boilerplate/.images/aws-quickstart-graphic.png" alt="">
+<img src="https://aws-quickstart.s3.amazonaws.com/{partner-solution-project-name}/docs/boilerplate/.images/aws-quickstart-graphic.png" alt="">
 </div>
 </div>
 <div class="admonitionblock tip">
@@ -910,13 +917,13 @@ p.footer-text a{color:#d7d8d8}
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-Refer to the <a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor" target="_blank" rel="noopener">GitHub repository</a> to view source files, report bugs, submit feature ideas, and post feedback about this Quick Start. To comment on the documentation, refer to <a href="#_feedback">Feedback</a>.
+Refer to the <a href="https://github.com/{partner-solution-github-org}/{partner-solution-project-name}" target="_blank" rel="noopener">GitHub repository</a> to view source files, report bugs, submit feature ideas, and post feedback about this Partner Solution. To comment on the documentation, refer to <a href="#_feedback">Feedback</a>.
 </td>
 </tr>
 </table>
 </div>
 <div class="paragraph text-left">
-<p>This Quick Start was created by Darktrace in collaboration with Amazon Web Services (AWS). <a href="http://aws.amazon.com/quickstart/" target="_blank" rel="noopener">Quick Starts</a> are automated reference deployments that help people deploy popular technologies on AWS according to AWS best practices. If you&#8217;re unfamiliar with AWS Quick Starts, refer to the <a href="https://fwd.aws/rA69w?" target="_blank" rel="noopener">AWS Quick Start General Information Guide</a>.</p>
+<p>This Partner Solution was created by Darktrace in collaboration with Amazon Web Services (AWS). <a href="https://aws.amazon.com/solutions/partners/" target="_blank" rel="noopener">Partner Solutions</a> are automated reference deployments that help people deploy popular technologies on AWS according to AWS best practices. If you&#8217;re unfamiliar with AWS Partner Solutions, refer to the <a href="https://fwd.aws/rA69w?" target="_blank" rel="noopener">AWS Partner Solution General Information Guide</a>.</p>
 </div>
 </div>
 </div>
@@ -1055,9 +1062,55 @@ AWS Cloud.</p>
 <h2 id="_predeployment_steps">Predeployment steps</h2>
 <div class="sectionbody">
 <div class="sect2">
+<h3 id="_generate_aws_systems_manager_parameters">Generate AWS Systems Manager parameters</h3>
+<div class="paragraph">
+<p>The Quick Start now uses AWS Systems Manager Parameter Store to hold the configuration and secrets for Darktrace vSensor. This is due to EC2 instance user data being <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html" target="_blank" rel="noopener">unencrypted</a>.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-su-create.html" target="_blank" rel="noopener">Create</a> separate "Secure String" SSM Parameters in the expected AWS region for each of the following:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>vSensor Update Key (e.g. <code>abcdefg:12345678</code>)</p>
+</li>
+<li>
+<p>Darktrace Instance Hostname (e.g. <code><a href="https://instancename.cloud.darktrace.com:443" class="bare">https://instancename.cloud.darktrace.com:443</a></code>)</p>
+</li>
+<li>
+<p>Darktrace Instance Push Token (e.g. <code>vsensor-push-token:123456abcdefg</code>)</p>
+</li>
+<li>
+<p>Darktrace Instance Proxy (e.g. <code><a href="http://proxyname.example.com:3128" class="bare">http://proxyname.example.com:3128</a></code>, <code><a href="http://username@password:proxyname.example.com:3128" class="bare">http://username@password:proxyname.example.com:3128</a></code> or <code>none</code> to not use a proxy)</p>
+</li>
+<li>
+<p>osSensor HMAC (e.g. <code>ossensorhmac123456abcdefg</code> or <code>none</code> to disable osSensor support)</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You will provide the parameter names to the CloudFormation template, for the vSensor to automatically decrypt these values on start up.</p>
+</div>
+<div class="paragraph">
+<p>Using SSM parameters provides the benefit that configurations can be more easily cycled out using the Auto Scaling Group Instance Refresh features, without having to redeploy the Quick Start template.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Please review <a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/asg-instance-refresh.html">ASG Instance Refresh Documentation</a>. Refreshing all instances will cause an outage, since instances are terminated before new instances are created.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_register_a_push_token">Register a push token</h3>
 <div class="paragraph">
-<p>Register a new push token to enable connection between vSensor probes and an existing Darktrace on-premise or cloud appliance. All of the vSensor instances in this deployment share the same push token.</p>
+<p>Register a new push token to enable connection between vSensor probes and an existing Darktrace on-premise or cloud instance. All of the vSensor instances in this deployment share the same push token.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -1074,12 +1127,12 @@ AWS Cloud.</p>
 <p>Choose <strong>Add</strong>. A token is generated in the form of <code>[label:string]</code>.</p>
 </li>
 <li>
-<p>Record the token, as it only displays once. You must enter the token in the <strong>Appliance push token</strong> <a href="#_parameter_reference">parameter</a> field during Quick Start deployment.</p>
+<p>Record the token, as it only displays once. You must enter the token in the <strong>Darktrace Instance push token</strong> <a href="#_parameter_reference">parameter</a> field during Quick Start deployment.</p>
 </li>
 </ol>
 </div>
 <div class="paragraph">
-<p>If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT Gateways after deployment. For more information, see <a href="#post-deployment-steps">Post deployment steps</a>, later in this guide.</p>
+<p>If your Darktrace Instance is behind a firewall, you must grant access to the instance from the IP addresses of your NAT Gateways after deployment. For more information, see <a href="#post-deployment-steps">Post deployment steps</a>, later in this guide.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1088,7 +1141,7 @@ AWS Cloud.</p>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Darktrace cloud appliances are already configured to allow push token access, no firewall changes are necessary.
+Darktrace cloud instances are already configured to allow push token access, no firewall changes are necessary.
 </td>
 </tr>
 </table>
@@ -1102,7 +1155,7 @@ Darktrace cloud appliances are already configured to allow push token access, no
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Sign in to your AWS account, and launch this Quick Start, as described under <a href="#_deployment_options">Deployment options</a>. The AWS CloudFormation console opens with a prepopulated template. Deployment takes about 30 minutes / 1 hour to complete.</p>
+<p>Sign in to your AWS account, and launch this Partner Solution, as described under <a href="#_deployment_options">Deployment options</a>. The AWS CloudFormation console opens with a prepopulated template.</p>
 </li>
 <li>
 <p>Choose the correct AWS Region, and then choose <strong>Next</strong>.</p>
@@ -1119,7 +1172,7 @@ Darktrace cloud appliances are already configured to allow push token access, no
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Unless you are customizing the Quick Start templates for your own projects, don&#8217;t change the default settings for the following Amazon Simple Storage Service (Amazon S3) parameters: <strong>Quick Start S3 bucket name</strong>, <strong>Quick Start S3 bucket Region</strong>, and <strong>Quick Start S3 key prefix</strong>. Changing these settings automatically updates code references to point to a new Quick Start location. For more information, refer to the <a href="https://fwd.aws/NwqYA?" target="_blank" rel="noopener">AWS Quick Start Contributor&#8217;s Guide</a>.
+Unless you&#8217;re customizing the Partner Solution templates or are instructed otherwise in this guide&#8217;s <strong>Predeployment</strong> section, don&#8217;t change the default settings for the following parameters: <code>QSS3BucketName</code>, <code>QSS3BucketRegion</code>, and <code>QSS3KeyPrefix</code>. Changing the values of these parameters will modify code references that point to the Amazon Simple Storage Service (Amazon S3) bucket name and key prefix. For more information, refer to the <a href="https://fwd.aws/NwqYA?" target="_blank" rel="noopener">AWS Partner Solutions Contributor&#8217;s Guide</a>.
 </td>
 </tr>
 </table>
@@ -1129,10 +1182,10 @@ Unless you are customizing the Quick Start templates for your own projects, don&
 <p>On the <strong>Configure stack options</strong> page, you can <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-resource-tags.html" target="_blank" rel="noopener">specify tags</a> (key-value pairs) for resources in your stack and <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html" target="_blank" rel="noopener">set advanced options</a>. When you finish, choose <strong>Next</strong>.</p>
 </li>
 <li>
-<p>On the <strong>Review</strong> page, review and confirm the template settings. Under <strong>Capabilities</strong>, select all of the check boxes to acknowledge that the template creates IAM resources that might require the ability to automatically expand macros.</p>
+<p>On the <strong>Review</strong> page, review and confirm the template settings. Under <strong>Capabilities</strong>, select all of the check boxes to acknowledge that the template creates AWS Identity and Access Management (IAM)  resources that might require the ability to automatically expand macros.</p>
 </li>
 <li>
-<p>Choose <strong>Create stack</strong> to deploy the stack.</p>
+<p>Choose <strong>Create stack</strong>. The stack takes about 30 minutes / 1 hour to deploy.</p>
 </li>
 <li>
 <p>Monitor the stack&#8217;s status, and when the status is <strong>CREATE_COMPLETE</strong>, the Darktrace vSensor deployment is ready.</p>
@@ -1150,7 +1203,7 @@ Unless you are customizing the Quick Start templates for your own projects, don&
 <div class="sect2">
 <h3 id="_configure_networking">Configure networking</h3>
 <div class="paragraph">
-<p>If your Darktrace appliance is behind a firewall, you must grant access to the appliance to the IP addresses of your NAT gateways. For a new VPC deployment, use the <strong>NatGatewayEIPs</strong> on the <strong>Outputs</strong> tab of the stack in the <a href="https://console.aws.amazon.com/cloudfront/home?" target="_blank" rel="noopener">AWS CloudFormation console</a>. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.</p>
+<p>If your Darktrace instance is behind a firewall, you must grant access to the instance from the IP addresses of your NAT gateways. For a new VPC deployment, use the <strong>NatGatewayEIPs</strong> on the <strong>Outputs</strong> tab of the stack in the <a href="https://console.aws.amazon.com/cloudfront/home?" target="_blank" rel="noopener">AWS CloudFormation console</a>. For an existing VPC deployment, use the IP addresses of the existing NAT gateways.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1198,6 +1251,24 @@ osSensor 6.0 and above is required to correctly mirror traffic for this Quick St
 <p>The bastion hosts deployed by this Quick Start are set to update automatically. The deployed vSensors are configured to receive the latest security and product updates daily from Darktrace and Ubuntu package repositories.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_using_aws_sessions_manager">Using AWS Sessions Manager</h3>
+<div class="paragraph">
+<p>When connecting via the AWS Systems Manager Session Manager it is recommended to use the session/preferences document created by the template.</p>
+</div>
+<div class="paragraph">
+<p>This will make sure that the session is encrypted and logged (in the same CloudWatch Log group as the vSensors logs). That is the same kms key that is used for encrypting log data in CloudWatch Logs.</p>
+</div>
+<div class="paragraph">
+<p>For the Systems Manager Session Manager allowed users you can Enforce a session document permission check for the AWS CLI. The name of the session/preferences document is in the Outputs.</p>
+</div>
+<div class="paragraph">
+<p>Example: <code>aws ssm start-session --target &lt;instance_id&gt; --document-name &lt;session_manager_preferences_name&gt;.</code></p>
+</div>
+<div class="paragraph">
+<p>In the Sessions Manager web console, each user must set their <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/session-preferences-enable-encryption.html" target="_blank" rel="noopener">Session Manager Preferences</a> to use the KMS Key ID and Log Group if encrypted sessions and logging are required.</p>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -1206,27 +1277,56 @@ osSensor 6.0 and above is required to correctly mirror traffic for this Quick St
 <div class="paragraph">
 <p>For troubleshooting common Quick Start issues, refer to the <a href="https://fwd.aws/rA69w?" target="_blank" rel="noopener">AWS Quick Start General Information Guide</a> and <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html" target="_blank" rel="noopener">Troubleshooting CloudFormation</a>.</p>
 </div>
+<div class="sect2">
+<h3 id="_auto_scaling_group_asg_fails">Auto Scaling Group (ASG) Fails</h3>
+<div class="paragraph">
+<p>In scenarios of invalid configuration parameters, upstream internet access blocked and other cases of the EC2 images failing to install and configure Darktrace vSensor, the ASG will fail to deploy.</p>
+</div>
+<div class="paragraph">
+<p>Viewing the Auto Scaling Group "Instance Management" page via the CloudFormation resources page will show terminating or no instances in this situation.</p>
+</div>
+<div class="paragraph">
+<p>In most situations, logging will be available from the vSensor start up in CloudWatch. View "Log Groups", find the group named <code>[SHORTID]-vSensor-Logs</code> and look for Log Streams ending in <code>-userdata</code>.</p>
+</div>
+<div class="paragraph">
+<p>If the configuration provided by SSM Parameters is seen as invalid in these logs, edit the SSM parameters to rectify the problem. Then perform a "instance refresh" on the ASG to attempt again with the new configuration options.</p>
+</div>
+<div class="paragraph">
+<p>If no <code>userdata</code> logging is provided, you may need to connect directly to the vSensor via SSH or AWS Systems Manager and retrieve <code>/var/log/userdata.log</code> directly. "Detach" the vSensor from the ASG to prevent it terminating during this procedure.</p>
+</div>
+<div class="paragraph">
+<p>For situations where the error is not clear, contact Darktrace Customer Support via the <a href="https://customerportal.darktrace.com" target="_blank" rel="noopener">Darktrace Customer Portal</a>, provide CloudFormation stack errors and one of the above <code>userdata</code> logs if available.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_customer_responsibility">Customer responsibility</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After you deploy a Partner Solution, confirm that your resources and services are updated and configured—including any required patches—to meet your security and other needs. For more information, refer to the <a href="https://aws.amazon.com/compliance/shared-responsibility-model/" target="_blank" rel="noopener">Shared Responsibility Model</a>.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_feedback">Feedback</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To submit feature ideas and report bugs, use the <strong>Issues</strong> section of the <a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor" target="_blank" rel="noopener">GitHub repository</a> for this Quick Start. To submit code, refer to the <a href="https://fwd.aws/NwqYA?" target="_blank" rel="noopener">Quick Start Contributor&#8217;s Guide</a>. To submit feedback on this deployment guide, use the following GitHub links:</p>
+<p>To submit feature ideas and report bugs, use the <strong>Issues</strong> section of the <a href="https://github.com/{partner-solution-github-org}/{partner-solution-project-name}" target="_blank" rel="noopener">GitHub repository</a> for this Partner Solution. To submit code, refer to the <a href="https://fwd.aws/NwqYA?" target="_blank" rel="noopener">Partner Solution Contributor&#8217;s Guide</a>. To submit feedback on this deployment guide, use the following GitHub links:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor/issues/new?labels=documentation,grammar+or+spelling&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Grammar or spelling</a></p>
+<p><a href="https://github.com/{partner-solution-github-org}/{partner-solution-project-name}/issues/new?labels=documentation,grammar+or+spelling&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Grammar or spelling</a></p>
 </li>
 <li>
-<p><a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor/issues/new?labels=documentation,broken+link&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Broken link</a></p>
+<p><a href="https://github.com/{partner-solution-github-org}/{partner-solution-project-name}/issues/new?labels=documentation,broken+link&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Broken link</a></p>
 </li>
 <li>
-<p><a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor/issues/new?labels=documentation,inaccurate+content&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Inaccurate content</a></p>
+<p><a href="https://github.com/{partner-solution-github-org}/{partner-solution-project-name}/issues/new?labels=documentation,inaccurate+content&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Inaccurate content</a></p>
 </li>
 <li>
-<p><a href="https://github.com/aws-quickstart/quickstart-darktrace-vsensor/issues/new?labels=documentation,display+and+design&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Display or design</a></p>
+<p><a href="https://github.com/{partner-solution-github-org}/{partner-solution-project-name}/issues/new?labels=documentation,display+and+design&amp;title=Deployment+guide+feedback&amp;body=Section+heading:%0ADocumentation+issue+description:%0A" target="_blank" rel="noopener">Display or design</a></p>
 </li>
 </ul>
 </div>
@@ -1239,7 +1339,7 @@ osSensor 6.0 and above is required to correctly mirror traffic for this Quick St
 <p>This document is provided for informational purposes only. It represents current AWS product offerings and practices as of the date of issue of this document, which are subject to change without notice. Customers are responsible for making their own independent assessment of the information in this document and any use of AWS products or services, each of which is provided "as is" without warranty of any kind, whether expressed or implied. This document does not create any warranties, representations, contractual commitments, conditions, or assurances from AWS, its affiliates, suppliers, or licensors. The responsibilities and liabilities of AWS to its customers are controlled by AWS agreements, and this document is not part of, nor does it modify, any agreement between AWS and its customers.</p>
 </div>
 <div class="paragraph">
-<p>The software included with this paper is licensed under the Apache License, version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at <a href="http://aws.amazon.com/apache2.0/" target="_blank" rel="noopener">http://aws.amazon.com/apache2.0/</a> or in the accompanying "license" file. This code is distributed on an "as is" basis, without warranties or conditions of any kind, either expressed or implied. Refer to the License for specific language governing permissions and limitations.</p>
+<p>The software included with this paper is licensed under the Apache License, version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at <a href="https://aws.amazon.com/apache2.0/" target="_blank" rel="noopener">https://aws.amazon.com/apache2.0/</a> or in the accompanying "license" file. This code is distributed on an "as is" basis, without warranties or conditions of any kind, either expressed or implied. Refer to the License for specific language governing permissions and limitations.</p>
 </div>
 </div>
 </div>
@@ -1247,17 +1347,10 @@ osSensor 6.0 and above is required to correctly mirror traffic for this Quick St
 <footer>
     <p class="footer-text">
         <!-- We can use document attributes: -->
-        <!-- Generated with Asciidoctor v2.0.17. -->
+        <!-- Generated with Asciidoctor v2.0.16. -->
         <a href="https://aws.amazon.com/privacy/">Privacy</a> | <a href="https://aws.amazon.com/terms/">Site terms</a> |
-        &copy; 2022, Amazon Web Services, Inc. or its affiliates and Darktrace. All rights reserved.
+        &copy; 2023, Amazon Web Services, Inc. or its affiliates and Darktrace. All rights reserved.
     </p>
 </footer>
 </body>
 </html>
-<!--
-repo commit:
-be43cc01c5ceced45a5e96ff940492355c6f9a89
-
-submodule config:
- bea809baa0fecbf792aacc93bbe8ecd4d017de5e docs/boilerplate (heads/main)
--->

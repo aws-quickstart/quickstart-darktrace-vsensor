@@ -5,6 +5,11 @@ Metadata:
   QuickStartDocumentation:
     EntrypointName: Parameters for deploying into an existing VPC
     Order: 2
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9001
+        - W9006
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -229,6 +234,7 @@ Parameters:
   FocalAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/canonical/ubuntu/server/focal/stable/current/amd64/hvm/ebs-gp2/ami-id'
+    Description: Focal AMI
 
 Conditions:
   NotUsingExtraInstanceSecurityGroups: !Equals
@@ -1362,4 +1368,4 @@ Outputs:
 
   Postdeployment:
     Description: See the deployment guide for post-deployment steps.
-    Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.sortDate&quickstart-all.sort-order=desc&awsm.page-quickstart-all=5
+    Value: https://aws-quickstart.github.io/quickstart-darktrace-vsensor/#_postdeployment_steps
